@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Purrytify</string>
+    <string name="base_url">http://34.101.226.132:3000</string>
 </resources>
