@@ -22,6 +22,10 @@ class MainActivity : ComponentActivity() {
                 composable("home") {
                     HomeScreen(navController = navController, currentRoute = "home")
                 }
+
+                composable("profile") {
+                    ProfileScreen(navController = navController, currentRoute = "profile")
+                }
             }
         }
     }
