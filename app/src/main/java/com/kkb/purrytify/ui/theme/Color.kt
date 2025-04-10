@@ -1,4 +1,4 @@
-package com.kkb.purrytify.ui.theme
+package com.example.purrytify.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

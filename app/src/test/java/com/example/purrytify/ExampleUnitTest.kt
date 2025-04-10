@@ -1,4 +1,4 @@
-package com.kkb.purrytify
+package com.example.purrytify
 
 import org.junit.Test
 

@@ -7,7 +7,9 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="green_button">#1ED760</color>
-    <color name="background_black">#121212</color>
-    <color name="grey_text">#B3B3B3</color>
+    <color name="background_overlay">#121212</color> <!-- Black with 60% opacity -->
+    <color name="text_field_background">#2C2C2C</color>
+    <color name="spotify_green">#1ED760</color>
+    <color name="purritify_white">#FFFFFF</color>
+    <color name="text_grey">#888888</color>
 </resources>

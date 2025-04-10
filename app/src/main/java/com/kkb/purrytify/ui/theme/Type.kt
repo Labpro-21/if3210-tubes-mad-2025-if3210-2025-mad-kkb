@@ -1,4 +1,4 @@
-package com.kkb.purrytify.ui.theme
+package com.example.purrytify.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Purrytify"
+rootProject.name = "Purry1"
 include(":app")
  
