@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
                     })
                 }
                 composable("home") {
-                    HomeScreen()
+                    HomeScreen(navController = navController, currentRoute = "home")
                 }
             }
         }

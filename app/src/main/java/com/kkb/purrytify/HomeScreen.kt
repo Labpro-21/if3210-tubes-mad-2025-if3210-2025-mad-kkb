@@ -12,63 +12,79 @@ import androidx.compose.ui.unit.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 
-@Preview
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
 @Composable
-fun HomeScreen() {
-    Column(
-        modifier = Modifier
-            .background(Color.Black)
-            .fillMaxSize()
-            .padding(horizontal = 16.dp)
-    ) {
-        Spacer(modifier = Modifier.height(16.dp))
+fun HomeScreenPreview() {
+    val navController = rememberNavController()
+    HomeScreen(navController = navController, currentRoute = "home")
+}
 
-        Text("New songs", color = Color.White, fontSize = 20.sp)
 
-        LazyRow {
-            items(5) {
-                Column(
-                    modifier = Modifier
-                        .padding(end = 16.dp)
-                        .width(120.dp)
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.album_placeholder),
-                        contentDescription = null,
+@Composable
+fun HomeScreen(navController: NavController, currentRoute: String) {
+    Scaffold(
+        containerColor = Color.Black,
+        bottomBar = {
+            BottomNavigationBar(navController = navController, currentRoute = currentRoute)
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .background(Color.Black)
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("New songs", color = Color.White, fontSize = 20.sp)
+
+            LazyRow {
+                items(5) {
+                    Column(
                         modifier = Modifier
-                            .height(120.dp)
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                    )
-                    Text("Starboy", color = Color.White, fontSize = 14.sp)
-                    Text("The Weeknd", color = Color.Gray, fontSize = 12.sp)
+                            .padding(end = 16.dp)
+                            .width(120.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.album_placeholder),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .height(120.dp)
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                        )
+                        Text("Starboy", color = Color.White, fontSize = 14.sp)
+                        Text("The Weeknd", color = Color.Gray, fontSize = 12.sp)
+                    }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-        Text("Recently played", color = Color.White, fontSize = 20.sp)
+            Text("Recently played", color = Color.White, fontSize = 20.sp)
 
-        LazyColumn {
-            items(5) {
-                Row(
-                    modifier = Modifier
-                        .padding(vertical = 8.dp)
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.album_placeholder),
-                        contentDescription = null,
+            LazyColumn {
+                items(5) {
+                    Row(
                         modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                    )
-                    Column(modifier = Modifier.padding(start = 12.dp)) {
-                        Text("Nights", color = Color.White)
-                        Text("Frank Ocean", color = Color.Gray, fontSize = 12.sp)
+                            .padding(vertical = 8.dp)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.album_placeholder),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                        )
+                        Column(modifier = Modifier.padding(start = 12.dp)) {
+                            Text("Nights", color = Color.White)
+                            Text("Frank Ocean", color = Color.Gray, fontSize = 12.sp)
+                        }
                     }
                 }
             }
