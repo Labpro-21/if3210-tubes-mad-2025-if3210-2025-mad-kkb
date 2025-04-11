@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp") version "2.0.0-1.0.21"
+    id("com.google.dagger.hilt.android") version "2.48.1"
 }
 
 android {
@@ -68,6 +69,9 @@ dependencies {
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("com.google.dagger:hilt-android:2.48")
     ksp("com.google.dagger:hilt-compiler:2.48")
+    ksp("androidx.room:room-compiler:2.6.1")
+    implementation("com.squareup:javapoet:1.13.0")
+    implementation("androidx.hilt:hilt-navigation-compose:1.1.0-alpha01")
 
 
 }
