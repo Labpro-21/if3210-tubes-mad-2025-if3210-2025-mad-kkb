@@ -20,10 +20,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kkb.purrytify.data.model.Song
 
-@Preview
+//@Preview
 @Composable
-fun TrackScreen() {
+fun TrackScreen(song: Song) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -73,16 +74,16 @@ fun TrackScreen() {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Song Info
+            // title
             Text(
-                text = "Starboy",
+                text = song.title,
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
-
+            // artist
             Text(
-                text = "The Weeknd, Daft Punk",
+                text = song.artist,
                 color = Color.LightGray,
                 fontSize = 14.sp
             )
@@ -154,26 +155,6 @@ fun TrackScreen() {
                 )
             }
         }
-
-        // Bottom Navigation
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.SpaceAround
-        ) {
-            IconWithLabel("Home", Icons.Default.Home)
-            IconWithLabel("Your Library", Icons.Default.LibraryMusic)
-            IconWithLabel("Profile", Icons.Default.Person)
-        }
     }
 }
 
-@Composable
-fun IconWithLabel(label: String, icon: ImageVector) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(icon, contentDescription = label, tint = Color.White)
-        Text(label, color = Color.White, fontSize = 10.sp)
-    }
-}

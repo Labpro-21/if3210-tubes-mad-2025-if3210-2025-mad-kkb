@@ -91,7 +91,10 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
             }else{
                 LazyRow {
                     items(songs) { song ->
-                        SongView(song = song)
+                        SongView(song = song, onClick = {
+                            viewModel.selectSong(song)
+                            navController.navigate("track")
+                        })
                     }
                 }
 
@@ -101,7 +104,10 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
 
                 LazyColumn {
                     items(songs) { song ->
-                        SongView(song = song)
+                        SongView(song = song, onClick = {
+                            viewModel.selectSong(song)
+                            navController.navigate("track")
+                        })
                     }
                 }
             }

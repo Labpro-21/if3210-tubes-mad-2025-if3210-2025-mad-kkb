@@ -1,5 +1,6 @@
 package com.kkb.purrytify.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kkb.purrytify.data.dao.SongDao
@@ -18,6 +19,8 @@ class SongViewModel @Inject constructor(
 ) : ViewModel() {
     private val _songs = MutableStateFlow<List<Song>>(emptyList())
     val songs: StateFlow<List<Song>> = _songs.asStateFlow()
+    private val _selectedSong = MutableStateFlow<Song?>(null)
+    val selectedSong: StateFlow<Song?> = _selectedSong.asStateFlow()
 
     init {
         refreshSongs()
@@ -34,6 +37,14 @@ class SongViewModel @Inject constructor(
             songDao.insert(song)
             refreshSongs() // refresh after inserting
         }
+    }
+
+    fun selectSong(song: Song) {
+        _selectedSong.value = song
+    }
+
+    fun getSelectedSong():Song?{
+        return _selectedSong.value
     }
 
 //    fun insertSong(song: Song) {
