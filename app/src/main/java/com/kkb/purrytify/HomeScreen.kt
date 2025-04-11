@@ -40,8 +40,8 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
         UploadSongBottomSheet(
             sheetState = sheetState,
             onDismiss = { showBottomSheet = false },
-        ) { title, artist, fileUri ->
-            viewModel.insertSong(Song(title = title, artist = artist, filePath = fileUri))
+        ) { title, artist, fileUri, coverPath ->
+            viewModel.insertSong(Song(title = title, artist = artist, filePath = fileUri, coverPath = coverPath))
 //            Log.d(viewModel.getSongs())
             showBottomSheet = false
         }

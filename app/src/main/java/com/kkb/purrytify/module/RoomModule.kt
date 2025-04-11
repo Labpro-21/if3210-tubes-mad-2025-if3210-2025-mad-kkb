@@ -22,7 +22,7 @@ object RoomModule {
             context,
             AppDatabase::class.java,
             "purrytify_database"
-        ).build()
+        ).fallbackToDestructiveMigration().build()
     }
 
     @Provides
