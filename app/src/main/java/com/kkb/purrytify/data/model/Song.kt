@@ -8,5 +8,6 @@ data class Song(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val title: String,
     val artist: String,
-    val filePath: String
+    val filePath: String,
+//    val coverPath?: String
 )

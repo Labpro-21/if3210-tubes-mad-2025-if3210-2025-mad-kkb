@@ -1,5 +1,6 @@
 package com.kkb.purrytify
 
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -12,21 +13,28 @@ import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.*
-import kotlinx.coroutines.CoroutineScope
+import androidx.compose.ui.platform.LocalContext
+
+//import kotlin.coroutines.jvm.internal.CompletedContinuation.context
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UploadSongBottomSheet(
     sheetState: SheetState,
     onDismiss: () -> Unit,
-    onSaveClick: (title: String, artist: String) -> Unit,
+    onSaveClick: (title: String, artist: String, filePath: String) -> Unit,
 ) {
     val fieldBgColor = colorResource(id = R.color.text_field_background)
     val loginButtonColor = colorResource(id = R.color.spotify_green)
     val white = colorResource(id = R.color.purritify_white)
     val grey = colorResource(id = R.color.text_grey)
+
+    val context = LocalContext.current
+
     var title by remember { mutableStateOf("") }
     var artist by remember { mutableStateOf("") }
+    var fileUri by remember { mutableStateOf<Uri?>(null) }
+
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -48,7 +56,19 @@ fun UploadSongBottomSheet(
                 val boxSize = (maxWidth - 100.dp) / 2
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     UploadPhotoBox()
-                    UploadFileBox()
+                    UploadFileBox { uri ->
+                        fileUri = uri
+
+                        uri?.let {
+                            val retriever = MediaMetadataRetriever()
+                            retriever.setDataSource(context, it)
+
+                            title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE) ?: "Untitled"
+                            artist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST) ?: "Unnamed Artist"
+
+                            retriever.release()
+                        }
+                    }
                 }
             }
 
@@ -110,7 +130,7 @@ fun UploadSongBottomSheet(
 
                 Button(
                     onClick = {
-                        onSaveClick(title, artist)
+                        onSaveClick(title, artist, fileUri.toString())
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = loginButtonColor)
                 ) {
@@ -148,7 +168,7 @@ fun UploadFileBox(onFileSelected: (Uri?) -> Unit = {}) {
         modifier = Modifier
             .size(100.dp)
             .border(BorderStroke(1.dp, Color.Gray), shape = RoundedCornerShape(8.dp))
-            .clickable { launcher.launch("*/*") },
+            .clickable { launcher.launch("audio/*") },
         contentAlignment = Alignment.Center
     ) {
         Text("Upload File", color = Color.White)

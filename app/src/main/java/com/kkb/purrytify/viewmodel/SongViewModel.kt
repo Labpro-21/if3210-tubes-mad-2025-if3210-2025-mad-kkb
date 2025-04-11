@@ -7,19 +7,42 @@ import com.kkb.purrytify.data.model.Song
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 @HiltViewModel
 class SongViewModel @Inject constructor(
     private val songDao: SongDao
 ) : ViewModel() {
+    private val _songs = MutableStateFlow<List<Song>>(emptyList())
+    val songs: StateFlow<List<Song>> = _songs.asStateFlow()
+
+    init {
+        refreshSongs()
+    }
+
+    private fun refreshSongs() {
+        viewModelScope.launch {
+            _songs.value = songDao.getAllSongs()
+        }
+    }
 
     fun insertSong(song: Song) {
         viewModelScope.launch {
             songDao.insert(song)
+            refreshSongs() // refresh after inserting
         }
     }
 
-    suspend fun getSongs(): List<Song> {
-        return songDao.getAllSongs()
-    }
+//    fun insertSong(song: Song) {
+//        viewModelScope.launch {
+//            songDao.insert(song)
+//        }
+//    }
+//
+//    suspend fun getSongs(): List<Song> {
+//        return songDao.getAllSongs()
+//    }
 }
