@@ -1,5 +1,6 @@
 package com.kkb.purrytify
 
+import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -7,22 +8,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.List
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.colorResource
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.kkb.purrytify.data.dao.SongDao
 import com.kkb.purrytify.data.model.Song
+import com.kkb.purrytify.ui.components.SongView
 import com.kkb.purrytify.viewmodel.SongViewModel
 import kotlinx.coroutines.launch
 
@@ -41,12 +35,14 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
     val sheetState = rememberModalBottomSheetState( skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
+    val songs by viewModel.songs.collectAsState()
     if (showBottomSheet) {
         UploadSongBottomSheet(
             sheetState = sheetState,
             onDismiss = { showBottomSheet = false },
-        ) { title, artist ->
-            viewModel.insertSong(Song(title = title, artist = artist, filePath = ""))
+        ) { title, artist, fileUri, coverPath ->
+            viewModel.insertSong(Song(title = title, artist = artist, filePath = fileUri, coverPath = coverPath))
+//            Log.d(viewModel.getSongs())
             showBottomSheet = false
         }
     }
@@ -79,60 +75,37 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
 
                 }) {
                     Icon(
-                        imageVector = Icons.Default.List,
+                        imageVector = Icons.Default.Add,
                         contentDescription = "Add",
                         tint = Color.White
                     )
                 }
             }
+            if(songs.isEmpty()){
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No songs yet", color = Color.Gray, fontSize = 16.sp)
+                }
+            }else{
+                LazyRow {
+                    items(songs) { song ->
+                        SongView(song = song)
+                    }
+                }
 
-            LazyRow {
-                items(5) {
-                    Column(
-                        modifier = Modifier
-                            .padding(end = 16.dp)
-                            .width(120.dp)
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.album_placeholder),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .height(120.dp)
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                        )
-                        Text("Starboy", color = Color.White, fontSize = 14.sp)
-                        Text("The Weeknd", color = Color.Gray, fontSize = 12.sp)
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text("Recently played", color = Color.White, fontSize = 20.sp)
+
+                LazyColumn {
+                    items(songs) { song ->
+                        SongView(song = song)
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text("Recently played", color = Color.White, fontSize = 20.sp)
-
-            LazyColumn {
-                items(5) {
-                    Row(
-                        modifier = Modifier
-                            .padding(vertical = 8.dp)
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.album_placeholder),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                        )
-                        Column(modifier = Modifier.padding(start = 12.dp)) {
-                            Text("Nights", color = Color.White)
-                            Text("Frank Ocean", color = Color.Gray, fontSize = 12.sp)
-                        }
-                    }
-                }
-            }
         }
     }
 }
