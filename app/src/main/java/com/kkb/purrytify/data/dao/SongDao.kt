@@ -1,0 +1,16 @@
+package com.kkb.purrytify.data.dao
+
+import androidx.room.*
+import com.kkb.purrytify.data.model.Song
+
+@Dao
+interface SongDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(song: Song)
+
+    @Query("SELECT * FROM songs")
+    suspend fun getAllSongs(): List<Song>
+
+    @Delete
+    suspend fun delete(song: Song)
+}
