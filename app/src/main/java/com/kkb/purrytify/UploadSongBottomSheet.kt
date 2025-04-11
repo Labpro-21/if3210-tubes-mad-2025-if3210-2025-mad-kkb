@@ -23,6 +23,8 @@ fun UploadSongBottomSheet(
     val loginButtonColor = colorResource(id = R.color.spotify_green)
     val white = colorResource(id = R.color.purritify_white)
     val grey = colorResource(id = R.color.text_grey)
+    var title by remember { mutableStateOf("") }
+    var artist by remember { mutableStateOf("") }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -72,9 +74,10 @@ fun UploadSongBottomSheet(
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
-                    value = "title",
-                    onValueChange = {},
+                    value = title,
+                    onValueChange = {title = it},
                     label = { Text("Title") },
+                    placeholder = { Text("Title") },
                     singleLine = true,
                     colors = TextFieldDefaults.colors(
                         focusedTextColor = white,
@@ -92,9 +95,10 @@ fun UploadSongBottomSheet(
                 )
 
                 OutlinedTextField(
-                    value = "artist",
-                    onValueChange = {},
+                    value = artist,
+                    onValueChange = {artist = it},
                     label = { Text("Artist") },
+                    placeholder = { Text("Artist") },
                     singleLine = true,
                     colors = TextFieldDefaults.colors(
                         focusedTextColor = white,

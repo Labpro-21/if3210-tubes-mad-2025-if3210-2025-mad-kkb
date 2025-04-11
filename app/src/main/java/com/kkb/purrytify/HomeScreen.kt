@@ -31,7 +31,7 @@ fun HomeScreenPreview() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController, currentRoute: String) {
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState( skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
     if (showBottomSheet) {
@@ -61,10 +61,6 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("New songs", color = Color.White, fontSize = 20.sp)
-                coroutineScope.launch {
-                    showBottomSheet = true
-                    sheetState.show()
-                }
                 IconButton(onClick = {
                     // TODO: Tambahkan aksi saat tombol diklik
                     coroutineScope.launch {
