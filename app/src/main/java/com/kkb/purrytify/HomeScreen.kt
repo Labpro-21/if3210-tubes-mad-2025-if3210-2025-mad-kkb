@@ -10,10 +10,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.List
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.launch
 
 @Preview(showBackground = true, backgroundColor = 0xFF000000)
 @Composable
@@ -23,8 +28,19 @@ fun HomeScreenPreview() {
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController, currentRoute: String) {
+    val sheetState = rememberModalBottomSheetState()
+    val coroutineScope = rememberCoroutineScope()
+    var showBottomSheet by remember { mutableStateOf(false) }
+    if (showBottomSheet) {
+        UploadSongBottomSheet(
+            sheetState = sheetState,
+            coroutineScope = coroutineScope,
+            onDismiss = { showBottomSheet = false }
+        )
+    }
     Scaffold(
         containerColor = Color.Black,
         bottomBar = {
@@ -39,7 +55,31 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                 .padding(horizontal = 16.dp)
         ) {
             Spacer(modifier = Modifier.height(16.dp))
-            Text("New songs", color = Color.White, fontSize = 20.sp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("New songs", color = Color.White, fontSize = 20.sp)
+                coroutineScope.launch {
+                    showBottomSheet = true
+                    sheetState.show()
+                }
+                IconButton(onClick = {
+                    // TODO: Tambahkan aksi saat tombol diklik
+                    coroutineScope.launch {
+                        showBottomSheet = true
+                        sheetState.show()
+                    }
+
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.List,
+                        contentDescription = "Add",
+                        tint = Color.White
+                    )
+                }
+            }
 
             LazyRow {
                 items(5) {
