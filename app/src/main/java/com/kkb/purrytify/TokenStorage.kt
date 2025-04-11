@@ -2,55 +2,77 @@ package com.kkb.purrytify
 
 import android.content.Context
 import android.media.session.MediaSession.Token
+import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object TokenStorage {
+
+    private const val PREF_NAME = "secure_token"
+    private const val ACCESS_TOKEN_KEY = "accessToken"
+    private const val REFRESH_TOKEN_KEY = "refreshToken"
+
+    private fun getPrefs(context: Context) = EncryptedSharedPreferences.create(
+        context,
+        PREF_NAME,
+        MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build(),
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
+
     fun saveToken(context: Context, accessToken: String, refreshToken: String) {
-        val sharedPrefs = EncryptedSharedPreferences.create(
-            context,
-            "secure_prefs",
-            MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
-        sharedPrefs.edit().putString("accessToken", accessToken).apply()
-        sharedPrefs.edit().putString("refreshToken", refreshToken).apply()
+        val sharedPrefs = getPrefs(context)
+        sharedPrefs.edit()
+            .putString(ACCESS_TOKEN_KEY, accessToken)
+            .putString(REFRESH_TOKEN_KEY, refreshToken)
+            .apply()
     }
 
-    fun getToken(context: Context): String? {
-        val sharedPrefs = EncryptedSharedPreferences.create(
-            context,
-            "secure_prefs",
-            MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
-        return sharedPrefs.getString("accessToken", null)
-    }
+//    fun getToken(context: Context): String? {
+//        val sharedPrefs = EncryptedSharedPreferences.create(
+//            context,
+//            "secure_prefs",
+//            MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
+//            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+//            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+//        )
+//        return sharedPrefs.getString("accessToken", null)
+//    }
 
     fun clearToken(context: Context) {
-        val sharedPrefs = EncryptedSharedPreferences.create(
-            context,
-            "secure_prefs",
-            MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
-        sharedPrefs.edit().remove("accessToken").apply()
-        sharedPrefs.edit().remove("refreshToken").apply()
+        getPrefs(context).edit().clear().apply()
+    }
+
+    fun getAccessToken(context: Context): String? {
+        return getPrefs(context).getString(ACCESS_TOKEN_KEY, null)
+    }
+
+    fun getRefreshToken(context: Context): String? {
+        return getPrefs(context).getString(REFRESH_TOKEN_KEY, null)
     }
 
     suspend fun refreshAccessTokenIfNeeded(context: Context): Boolean {
-        val accessToken = TokenStorage.getToken(context)
+        val accessToken = getAccessToken(context)
+        //cetak accessToken
+        Log.d("TokenStorage", "accessToken: $accessToken")
         if (accessToken != null && isTokenValid(accessToken)) {
+            Log.d("TokenStorage", "Token masih valid")
             return true // Masih valid, tidak perlu refresh
         }
 
-        val sharedPrefs = context.getSharedPreferences("secure_prefs", Context.MODE_PRIVATE)
-        val refreshToken = sharedPrefs.getString("refreshToken", null)
+        // token tidak valid atau null
+        Log.d("TokenStorage", "Token tidak valid atau null")
+
+//        val sharedPrefs = context.getSharedPreferences("secure_prefs", Context.MODE_PRIVATE)
+//      val refreshToken = sharedPrefs.getString("refreshToken", null)
+        val refreshToken = getRefreshToken(context)
+
+        //cetak refreshToken
+        Log.d("TokenStorage", "refreshToken: $refreshToken")
 
         if (refreshToken == null) return false // Tidak bisa refresh
 
@@ -66,7 +88,8 @@ object TokenStorage {
             if (response.isSuccessful && response.body() != null) {
                 val newAccessToken = response.body()!!.accessToken
                 val newRefreshToken = response.body()!!.refreshToken
-                TokenStorage.saveToken(context, newAccessToken, newRefreshToken)
+                saveToken(context, newAccessToken, newRefreshToken)
+                Log.d("TokenStorage", "Token berhasil di-refresh")
                 true
             } else {
                 false // Refresh gagal

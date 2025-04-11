@@ -3,6 +3,7 @@ package com.kkb.purrytify
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.navigation.compose.NavHost
@@ -17,6 +18,7 @@ class MainActivity : ComponentActivity() {
         val context = this
         lifecycleScope.launch {
             val loggedIn = refreshAccessTokenIfNeeded(context)
+            Log.d("TokenStorage", "loggedIn: $loggedIn")
             val initialRoute = if (loggedIn) "home" else "login"
 
             setContent {
