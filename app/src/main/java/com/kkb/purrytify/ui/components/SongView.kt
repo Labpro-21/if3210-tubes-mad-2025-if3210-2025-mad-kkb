@@ -18,7 +18,7 @@ import com.kkb.purrytify.data.model.Song
 
 
 @Composable
-fun SongView(song: Song, modifier: Modifier = Modifier) {
+fun SongView(song: Song, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val painter = rememberAsyncImagePainter(
         model = song.coverPath ?: R.drawable.album_placeholder
     )
@@ -30,7 +30,7 @@ fun SongView(song: Song, modifier: Modifier = Modifier) {
             .width(120.dp)
     ) {
         Image(
-            painter = painterResource(id = R.drawable.album_placeholder),
+            painter = painter,
             contentDescription = null,
             modifier = Modifier
                 .height(120.dp)
