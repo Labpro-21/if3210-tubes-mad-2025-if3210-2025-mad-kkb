@@ -1,5 +1,8 @@
 package com.kkb.purrytify
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,10 +18,9 @@ import kotlinx.coroutines.CoroutineScope
 @Composable
 fun UploadSongBottomSheet(
     sheetState: SheetState,
-    coroutineScope: CoroutineScope,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onSaveClick: (title: String, artist: String) -> Unit,
 ) {
-    val overlayColor = colorResource(id = R.color.background_overlay)
     val fieldBgColor = colorResource(id = R.color.text_field_background)
     val loginButtonColor = colorResource(id = R.color.spotify_green)
     val white = colorResource(id = R.color.purritify_white)
@@ -29,44 +31,24 @@ fun UploadSongBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color.Black
+        containerColor = Color.Black,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(5.dp),
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()), // Ensures scroll on small screens
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Upload Song", color = Color.White, fontSize = 18.sp)
-            }
+            Text("Upload Song", color = Color.White, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(16.dp))
 
             BoxWithConstraints {
                 val boxSize = (maxWidth - 100.dp) / 2
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .size(boxSize)
-                            .border(BorderStroke(1.dp, Color.Gray), shape = RoundedCornerShape(8.dp))
-                            .clickable { },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("Upload Photo", color = Color.White)
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(boxSize)
-                            .border(BorderStroke(1.dp, Color.Gray), shape = RoundedCornerShape(8.dp))
-                            .clickable { },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("Upload File", color = Color.White)
-                    }
+                    UploadPhotoBox()
+                    UploadFileBox()
                 }
             }
 
@@ -75,7 +57,7 @@ fun UploadSongBottomSheet(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = title,
-                    onValueChange = {title = it},
+                    onValueChange = { title = it },
                     label = { Text("Title") },
                     placeholder = { Text("Title") },
                     singleLine = true,
@@ -96,7 +78,7 @@ fun UploadSongBottomSheet(
 
                 OutlinedTextField(
                     value = artist,
-                    onValueChange = {artist = it},
+                    onValueChange = { artist = it },
                     label = { Text("Artist") },
                     placeholder = { Text("Artist") },
                     singleLine = true,
@@ -119,14 +101,56 @@ fun UploadSongBottomSheet(
             Spacer(modifier = Modifier.height(24.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)) {
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
+                ) {
                     Text("Cancel")
                 }
 
-                Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = loginButtonColor)) {
+                Button(
+                    onClick = {
+                        onSaveClick(title, artist)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = loginButtonColor)
+                ) {
                     Text("Save")
                 }
             }
         }
+    }
+}
+
+@Composable
+fun UploadPhotoBox(onPhotoSelected: (Uri?) -> Unit = {}) {
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri -> onPhotoSelected(uri) }
+
+    Box(
+        modifier = Modifier
+            .size(100.dp)
+            .border(BorderStroke(1.dp, Color.Gray), shape = RoundedCornerShape(8.dp))
+            .clickable { launcher.launch("image/*") },
+        contentAlignment = Alignment.Center
+    ) {
+        Text("Upload Photo", color = Color.White)
+    }
+}
+
+@Composable
+fun UploadFileBox(onFileSelected: (Uri?) -> Unit = {}) {
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri -> onFileSelected(uri) }
+
+    Box(
+        modifier = Modifier
+            .size(100.dp)
+            .border(BorderStroke(1.dp, Color.Gray), shape = RoundedCornerShape(8.dp))
+            .clickable { launcher.launch("*/*") },
+        contentAlignment = Alignment.Center
+    ) {
+        Text("Upload File", color = Color.White)
     }
 }

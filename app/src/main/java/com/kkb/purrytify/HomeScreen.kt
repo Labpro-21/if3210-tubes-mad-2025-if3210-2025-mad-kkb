@@ -16,8 +16,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.kkb.purrytify.data.model.Song
+import com.kkb.purrytify.viewmodel.SongViewModel
 import kotlinx.coroutines.launch
 
 @Preview(showBackground = true, backgroundColor = 0xFF000000)
@@ -31,15 +34,18 @@ fun HomeScreenPreview() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController, currentRoute: String) {
+    val viewModel: SongViewModel = viewModel()
     val sheetState = rememberModalBottomSheetState( skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
     if (showBottomSheet) {
         UploadSongBottomSheet(
             sheetState = sheetState,
-            coroutineScope = coroutineScope,
-            onDismiss = { showBottomSheet = false }
-        )
+            onDismiss = { showBottomSheet = false },
+        ) { title, artist ->
+            viewModel.insertSong(Song(title = title, artist = artist, filePath = ""))
+            showBottomSheet = false
+        }
     }
     Scaffold(
         containerColor = Color.Black,
