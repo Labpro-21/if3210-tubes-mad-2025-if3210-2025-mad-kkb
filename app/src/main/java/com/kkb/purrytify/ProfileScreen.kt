@@ -1,5 +1,7 @@
 package com.kkb.purrytify
 
+import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -16,13 +18,44 @@ import androidx.compose.ui.unit.*
 import androidx.navigation.NavController
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
+import com.kkb.purrytify.data.remote.RetrofitInstance
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+
 
 @Composable
 fun ProfileScreen(    navController: NavController = rememberNavController(), // aman untuk preview
-                      currentRoute: String = "profile"                         // default route
+                      currentRoute: String = "profile",                         // default route
+                      context: Context = LocalContext.current
 ) {
+    var profile by remember { mutableStateOf<ProfileResponse?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    // ✅ LaunchedEffect = coroutine-safe zone untuk suspend function, semacam async kayaknya
+    LaunchedEffect(Unit) {
+        val token = TokenStorage.getAccessToken(context)
+        if (token != null) {
+            try {
+                val result = RetrofitInstance.api.getProfile("Bearer $token")
+                profile = result
+                Log.d("ProfileScreen", "Profile: $profile")
+            } catch (e: Exception) {
+                error = "Gagal mengambil data profil"
+                Log.e("ProfileScreen", "Error: ${e.message}")
+            }
+        } else {
+            error = "Token tidak tersedia"
+        }
+    }
+
+
+
     Scaffold(
         containerColor = Color.Black,
         bottomBar = {
@@ -73,7 +106,7 @@ fun ProfileScreen(    navController: NavController = rememberNavController(), //
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "13522xxx",
+                text = profile?.username ?: "Loading...",
                 color = Color.White,
                 fontSize = 20.sp,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
