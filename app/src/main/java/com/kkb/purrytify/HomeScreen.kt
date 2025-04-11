@@ -16,9 +16,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.kkb.purrytify.data.dao.SongDao
 import com.kkb.purrytify.data.model.Song
 import com.kkb.purrytify.viewmodel.SongViewModel
 import kotlinx.coroutines.launch
@@ -34,7 +37,7 @@ fun HomeScreenPreview() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController, currentRoute: String) {
-    val viewModel: SongViewModel = viewModel()
+    val viewModel = hiltViewModel<SongViewModel>()
     val sheetState = rememberModalBottomSheetState( skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
