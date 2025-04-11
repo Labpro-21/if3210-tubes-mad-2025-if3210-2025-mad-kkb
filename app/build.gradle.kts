@@ -72,6 +72,7 @@ dependencies {
     ksp("androidx.room:room-compiler:2.6.1")
     implementation("com.squareup:javapoet:1.13.0")
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0-alpha01")
+    implementation("io.coil-kt:coil-compose:2.4.0")
 
 
 }

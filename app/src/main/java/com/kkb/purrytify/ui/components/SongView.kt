@@ -12,12 +12,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
 import com.kkb.purrytify.R
 import com.kkb.purrytify.data.model.Song
 
 
 @Composable
-fun SongView(song: Song, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun SongView(song: Song, modifier: Modifier = Modifier) {
+    val painter = rememberAsyncImagePainter(
+        model = song.coverPath ?: R.drawable.album_placeholder
+    )
+
     Column(
         modifier = modifier
             .clickable { onClick() }
