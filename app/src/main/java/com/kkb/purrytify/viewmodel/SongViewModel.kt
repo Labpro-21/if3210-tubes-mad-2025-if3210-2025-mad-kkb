@@ -71,6 +71,14 @@ class SongViewModel @Inject constructor(
         return _songs.value.find { it.id == id }
     }
 
+    fun deleteSong(song: Song) {
+        viewModelScope.launch {
+            songDao.delete(song)
+            refreshSongs() // refresh after deleting
+        }
+
+    }
+
 //    fun insertSong(song: Song) {
 //        viewModelScope.launch {
 //            songDao.insert(song)

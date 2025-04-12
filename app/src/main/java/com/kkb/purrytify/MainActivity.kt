@@ -72,7 +72,9 @@ class MainActivity : ComponentActivity() {
                             if (index != -1) {
                                 TrackScreen(
                                     songs = songs,
-                                    initialIndex = index
+                                    initialIndex = index,
+                                    navController = navController,
+                                    viewModel = viewModel
                                 )
                             } else {
                                 Log.e("idsong", "Song not found in the list")
