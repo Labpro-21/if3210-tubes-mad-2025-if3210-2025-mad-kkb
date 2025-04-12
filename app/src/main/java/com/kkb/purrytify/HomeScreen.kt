@@ -36,7 +36,7 @@ fun HomeScreenPreview() {
 @Composable
 fun HomeScreen(navController: NavController, currentRoute: String) {
     val viewModel = hiltViewModel<SongViewModel>()
-    val songs by viewModel.songs.collectAsState()
+    val songs by viewModel.userSongList.collectAsState()
     val context = LocalContext.current
     val currentSong by MediaPlayerManager.currentSong.collectAsState()
     val isPlaying by MediaPlayerManager.isPlaying.collectAsState()
@@ -107,8 +107,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                 LazyRow {
                     items(songs) { song ->
                         SongViewBig(song = song, onClick = {
-                            viewModel.selectSong(song)
-                            navController.navigate("track/${song.id}")
+                            navController.navigate("track/${song.songId}")
                         })
                     }
                 }
@@ -120,8 +119,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                 LazyColumn {
                     items(songs) { song ->
                         SongView(song = song, onClick = {
-                            viewModel.selectSong(song)
-                            navController.navigate("track/${song.id}")
+                            navController.navigate("track/${song.userId}")
                         })
                     }
                 }

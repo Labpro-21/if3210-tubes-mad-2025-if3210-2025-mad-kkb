@@ -12,6 +12,7 @@ import com.kkb.purrytify.data.dao.UserSongDao
 import com.kkb.purrytify.data.model.Song
 import com.kkb.purrytify.data.model.UserSongs
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +25,8 @@ import java.time.LocalDateTime
 @HiltViewModel
 class SongViewModel @Inject constructor(
     private val songDao: SongDao,
-    private val userSongDao: UserSongDao
+    private val userSongDao: UserSongDao,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
     private val _songs = MutableStateFlow<List<Song>>(emptyList())
     val songs: StateFlow<List<Song>> = _songs.asStateFlow()
@@ -45,12 +47,13 @@ class SongViewModel @Inject constructor(
     private fun refreshSongs() {
 
         viewModelScope.launch {
-            Log.d("usersong","tesss")
+            _songs.value = songDao.getAllSongs()
+            val user_id = TokenStorage.getUserId(context)?.toIntOrNull()
+            if (user_id != null){
+                _userSongs.value = userSongDao.getUserSongsByUserId(user_id)
+            }
             combine(_songs, _userSongs) { songs, userSongs ->
                 userSongs.mapNotNull { userSong ->
-                    Log.d("usersong","id:${userSong.id}")
-                    Log.d("usersong","song:${songs}")
-                    _songs.value = songDao.getAllSongs()
                     val song = songs.find { it.id == userSong.songId }
                     song?.let {
                         UserSong(
@@ -88,12 +91,12 @@ class SongViewModel @Inject constructor(
                 )
                 songDao.insert(song)
                 userSongDao.insert(userSong)
-                _userSongs.value = userSongDao.getUserSongsByUserId(user_id)
+//                _userSongs.value = userSongDao.getUserSongsByUserId(user_id)
                 Log.d("usersongs","${_userSongs.value}")
             } else {
                 Log.e("SongViewModel", "Failed to insert UserSongs: userId is null or invalid")
             }
-            refreshSongs() // refresh after inserting
+            refreshSongs()
         }
     }
 
@@ -103,29 +106,6 @@ class SongViewModel @Inject constructor(
 
     fun getSongById(id: Int?):Song?{
         return _songs.value.find { it.id == id }
-    }
-
-    fun getUserSong(context: Context): List<UserSong> {
-        val user_id = TokenStorage.getUserId(context)?.toIntOrNull()
-        val currentSongs = _songs.value
-        val currentUserSongs = _userSongs.value
-
-        return currentUserSongs.mapNotNull { userSong ->
-            val song = currentSongs.find { it.id == userSong.songId }
-            song?.let {
-                UserSong(
-                    userId = userSong.userId,
-                    songId = userSong.songId,
-                    title = it.title,
-                    artist = it.artist,
-                    filePath = it.filePath,
-                    coverPath = it.coverPath,
-                    isLiked = userSong.isLiked,
-                    createdAt = userSong.createdAt,
-                    lastPlayed = userSong.lastPlayed
-                )
-            }
-        }
     }
 
 

@@ -15,10 +15,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.kkb.purrytify.R
+import com.kkb.purrytify.UserSong
 import com.kkb.purrytify.data.model.Song
 
 @Composable
-fun SongViewBig(song: Song, onClick: () -> Unit = {}, modifier: Modifier = Modifier) {
+fun SongViewBig(song: UserSong, onClick: () -> Unit = {}, modifier: Modifier = Modifier) {
     Column( modifier = modifier.clickable { onClick() } .padding(horizontal = 10.dp, vertical = 10.dp) .width(120.dp) ) {
         AsyncImage( model = song.coverPath, contentDescription = null, modifier = Modifier .height(120.dp)
             .fillMaxWidth()
