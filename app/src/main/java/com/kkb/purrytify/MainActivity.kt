@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -30,36 +31,44 @@ class MainActivity : ComponentActivity() {
 
             setContent {
                 val navController = rememberNavController()
-                NavHost(navController = navController, startDestination = initialRoute) {
-                    composable("login") {
-                        LoginScreen(onLoginSuccess = {
-                            navController.navigate("home") {
-                                popUpTo("login") { inclusive = true }
-                            }
-                        })
-                    }
-                    composable("home") {
-                        HomeScreen(navController = navController, currentRoute = "home")
-                    }
-                    composable("profile") {
-                        ProfileScreen(navController = navController, currentRoute = "profile")
-                    }
-                    composable("library") {
-                        LibraryScreen(navController = navController, currentRoute = "library")
-                    }
-                    composable("track") {
-                        val backStackEntry = remember {
-                            navController.getBackStackEntry("home")
-                        }
+                val connectivityObserver = remember { ConnectivityObserver(context) }
+                val isConnected by connectivityObserver.observe().collectAsState(initial = true)
 
-                        val viewModel: SongViewModel = hiltViewModel(backStackEntry)
-                        val selectedSong = viewModel.getSelectedSong()
-                        selectedSong?.let {
-                            TrackScreen(song = it)
+                Column {
+                    if (!isConnected) {
+                        NoInternetPopup()
+                    }
+                    NavHost(navController = navController, startDestination = initialRoute) {
+                        composable("login") {
+                            LoginScreen(onLoginSuccess = {
+                                navController.navigate("home") {
+                                    popUpTo("login") { inclusive = true }
+                                }
+                            })
                         }
+                        composable("home") {
+                            HomeScreen(navController = navController, currentRoute = "home")
+                        }
+                        composable("profile") {
+                            ProfileScreen(navController = navController, currentRoute = "profile")
+                        }
+                        composable("library") {
+                            LibraryScreen(navController = navController, currentRoute = "library")
+                        }
+                        composable("track") {
+                            val backStackEntry = remember(navController) {
+                                navController.getBackStackEntry("home")
+                            }
+
+                            val viewModel: SongViewModel = hiltViewModel(backStackEntry)
+                            val selectedSong = viewModel.getSelectedSong()
+                            selectedSong?.let {
+                                TrackScreen(song = it)
+                            }
 //                        selectedSong?.let {
 //                            TrackScreen(song = it)
 //                        }
+                        }
                     }
                 }
             }
