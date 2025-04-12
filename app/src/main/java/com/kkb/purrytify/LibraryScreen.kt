@@ -66,13 +66,12 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
     val currentSong by MediaPlayerManager.currentSong.collectAsState()
     val isPlaying by MediaPlayerManager.isPlaying.collectAsState()
 
-    val displayedSongs = remember(selectedTab, songs, likes) {
-        if (selectedTab == "Liked") {
-            songs.filter { it.isLiked }
-        } else {
-            songs
-        }
+    val displayedSongs = if (selectedTab == "Liked") {
+        songs.filter { it.isLiked }
+    } else {
+        songs
     }
+
     if (showBottomSheet) {
         UploadSongBottomSheet(
             sheetState = sheetState,
@@ -103,7 +102,7 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
                         },
                         onNext = { /* Implement next song logic */ },
                         onClick = {
-                            navController.navigate("track/${currentSong!!.id}")
+                            navController.navigate("track/${currentSong!!.songId}")
                         }
                     )
                 }

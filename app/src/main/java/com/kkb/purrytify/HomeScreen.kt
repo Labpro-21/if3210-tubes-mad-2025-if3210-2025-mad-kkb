@@ -61,7 +61,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                         },
                         onNext = { /* Implement next song logic */ },
                         onClick = {
-                            navController.navigate("track/${currentSong!!.id}")
+                            navController.navigate("track/${currentSong!!.songId}")
                         }
                     )
                 }
@@ -120,7 +120,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                 LazyColumn {
                     items(songs) { song ->
                         SongView(song = song, onClick = {
-                            navController.navigate("track/${song.userId}")
+                            navController.navigate("track/${song.songId}")
                         })
                     }
                 }

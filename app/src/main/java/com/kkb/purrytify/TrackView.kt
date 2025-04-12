@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,18 +30,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.kkb.purrytify.data.model.Song
 import com.kkb.purrytify.util.MediaPlayerManager
+import com.kkb.purrytify.viewmodel.SongViewModel
 import kotlinx.coroutines.delay
 
 //@Preview
 @Composable
-fun TrackScreen(songs: List<Song>, initialIndex: Int) {
+fun TrackScreen(songs: List<UserSong>, initialIndex: Int) {
     val context = LocalContext.current
     val contentResolver = context.contentResolver
-
+    val viewModel = hiltViewModel<SongViewModel>()
     var currentIndex by remember { mutableStateOf(initialIndex) }
     val currentSong = songs.getOrNull(currentIndex) ?: return
 
@@ -143,12 +146,19 @@ fun TrackScreen(songs: List<Song>, initialIndex: Int) {
             )
 
             Spacer(modifier = Modifier.height(8.dp))
+            val songState by viewModel.userSongList.collectAsState()
+            val song = songState.find { it.songId == currentSong.songId }
+            val isLiked = song?.isLiked ?: false
+            IconButton(onClick = {
+                viewModel.toggleLike(currentSong.songId)
+            }) {
+                Icon(
+                    imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = if (isLiked) "Unlike" else "Like",
+                    tint = if (isLiked) Color.Red else Color.White
+                )
+            }
 
-            Icon(
-                imageVector = Icons.Default.FavoriteBorder,
-                contentDescription = "Favorite",
-                tint = Color.White
-            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -224,6 +234,7 @@ fun TrackScreen(songs: List<Song>, initialIndex: Int) {
                     if (currentIndex < songs.lastIndex) currentIndex++
                     else currentIndex = 0
                     Log.d("curindex", "index: ${currentIndex}")
+                    Log.d("songids", "$songs")
                 }) {
                     Icon(Icons.Default.SkipNext, contentDescription = "Next", tint = Color.White, modifier = Modifier.size(32.dp))
                 }

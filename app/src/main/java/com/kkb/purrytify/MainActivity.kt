@@ -65,10 +65,11 @@ class MainActivity : ComponentActivity() {
                         val songId = backStackEntry.arguments?.getInt("songId")
                         val viewModel: SongViewModel = hiltViewModel()
                         val selectedSong = viewModel.getSongById(songId) // You implement this
-                        val songs by viewModel.songs.collectAsState()
+                        val songs by viewModel.userSongList.collectAsState()
                         selectedSong?.let { song ->
-                            val index = songs.indexOfFirst { it.id == song.id }
+                            val index = songs.indexOfFirst { it.songId == song.id }
                             Log.d("idsong", "id: $index")
+                            Log.d("songids", "$songs")
                             if (index != -1) {
                                 TrackScreen(
                                     songs = songs,

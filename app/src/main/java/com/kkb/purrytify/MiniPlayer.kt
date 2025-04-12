@@ -20,23 +20,29 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.Image
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Text
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.kkb.purrytify.data.model.Song
 import com.kkb.purrytify.R
+import com.kkb.purrytify.viewmodel.SongViewModel
 
 @Composable
 fun MiniPlayer(
-    currentSong: Song,
+    currentSong: UserSong,
     isPlaying: Boolean,
     onPlayPause: () -> Unit,
     onNext: () -> Unit,
     onClick: () -> Unit
 ) {
+    val viewModel = hiltViewModel<SongViewModel>()
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -88,11 +94,16 @@ fun MiniPlayer(
             Spacer(modifier = Modifier.width(8.dp))
 
             // Favorite Button
-            IconButton(onClick = onNext) {
+            val songState by viewModel.userSongList.collectAsState()
+            val song = songState.find { it.songId == currentSong.songId }
+            val isLiked = song?.isLiked ?: false
+            IconButton(onClick = {
+                viewModel.toggleLike(currentSong.songId)
+            }) {
                 Icon(
-                    imageVector = Icons.Default.FavoriteBorder,
-                    contentDescription = "Like",
-                    tint = Color.White
+                    imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = if (isLiked) "Unlike" else "Like",
+                    tint = if (isLiked) Color.Red else Color.White
                 )
             }
 

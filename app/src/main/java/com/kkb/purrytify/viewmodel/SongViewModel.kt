@@ -108,6 +108,37 @@ class SongViewModel @Inject constructor(
         return _songs.value.find { it.id == id }
     }
 
+    fun toggleLike(songId: Int?) {
+        if (songId == null) return
+
+        viewModelScope.launch {
+            val userId = TokenStorage.getUserId(context)?.toIntOrNull()
+            if (userId != null) {
+                val userSongs = userSongDao.getUserSongsByUserId(userId)
+                val userSong = userSongs.find { it.songId == songId }
+
+                if (userSong != null) {
+                    val isLiked = !userSong.isLiked
+                    userSongDao.updateIsLiked(userId, songId, isLiked) // pakai insert dengan onConflict = REPLACE
+                    refreshSongs() // refresh state agar UI update
+                } else {
+                    // Optional: Jika belum ada entri UserSongs, bisa tambahkan default-nya
+                    val newUserSong = UserSongs(
+                        userId = userId,
+                        songId = songId,
+                        createdAt = LocalDateTime.now(),
+                        lastPlayed = null,
+                        isLiked = true
+                    )
+                    userSongDao.insert(newUserSong)
+
+                }
+            }
+            refreshSongs()
+        }
+    }
+
+
 
 //    fun insertSong(song: Song) {
 //        viewModelScope.launch {
