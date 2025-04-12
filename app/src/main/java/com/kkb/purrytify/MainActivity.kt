@@ -44,6 +44,9 @@ class MainActivity : ComponentActivity() {
                     composable("profile") {
                         ProfileScreen(navController = navController, currentRoute = "profile")
                     }
+                    composable("library") {
+                        LibraryScreen(navController = navController, currentRoute = "library")
+                    }
                     composable("track") {
                         val backStackEntry = remember {
                             navController.getBackStackEntry("home")
