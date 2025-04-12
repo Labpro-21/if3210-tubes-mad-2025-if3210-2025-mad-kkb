@@ -1,7 +1,6 @@
 package com.kkb.purrytify
 
 import SongAdapter
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +13,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -44,32 +46,42 @@ import androidx.navigation.NavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.kkb.purrytify.data.model.Song
-import com.kkb.purrytify.util.MediaPlayerManager
+import com.kkb.purrytify.data.model.UserSongs
+import com.kkb.purrytify.ui.components.SongView
+import com.kkb.purrytify.ui.components.SongViewBig
+import com.kkb.purrytify.viewmodel.LikeViewModel
 import com.kkb.purrytify.viewmodel.SongViewModel
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(navController: NavController, currentRoute: String){
     val viewModel = hiltViewModel<SongViewModel>()
+    val likeviewModel = hiltViewModel<LikeViewModel>()
     val sheetState = rememberModalBottomSheetState( skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
     val songs by viewModel.songs.collectAsState()
+    val likes by likeviewModel.likes.collectAsState()
     var selectedTab by remember { mutableStateOf("All") }
     val context = LocalContext.current
-    val currentSong by MediaPlayerManager.currentSong.collectAsState()
-    val isPlaying by MediaPlayerManager.isPlaying.collectAsState()
+    val user_id = TokenStorage.getUserId(context)?.toIntOrNull()
 
-    val displayedSongs = remember(selectedTab, songs) {
-        if (selectedTab == "Liked") songs.filter { it.isLiked } else songs
+    val displayedSongs = remember(selectedTab, songs, likes) {
+        if (selectedTab == "Liked") {
+            val likedSongIds = likes.filter { it.userId == user_id }.map { it.songId }.toSet()
+            songs.filter { it.id in likedSongIds }
+        } else {
+            songs
+        }
     }
     if (showBottomSheet) {
         UploadSongBottomSheet(
             sheetState = sheetState,
             onDismiss = { showBottomSheet = false },
         ) { title, artist, fileUri, coverPath ->
-            viewModel.insertSong(Song(title = title, artist = artist, filePath = fileUri, coverPath = coverPath))
+            viewModel.insertSong(context, Song(title = title, artist = artist, filePath = fileUri, coverPath = coverPath))
 //            Log.d(viewModel.getSongs())
             showBottomSheet = false
         }
@@ -77,33 +89,7 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
     Scaffold(
         containerColor = Color.Black,
         bottomBar = {
-            Column { // Changed from Box to Column
-                if (currentSong != null) {
-                    MiniPlayer(
-                        currentSong = currentSong!!,
-                        isPlaying = isPlaying,
-                        onPlayPause = {
-                            if (isPlaying) MediaPlayerManager.pause()
-                            else currentSong?.let { song ->
-                                MediaPlayerManager.play(
-                                    song = song,
-                                    uri = Uri.parse(song.filePath),
-                                    contentResolver = context.contentResolver
-                                )
-                            }
-                        },
-                        onNext = { /* Implement next song logic */ },
-                        onClick = {
-                            navController.navigate("track/${currentSong!!.id}")
-                        }
-                    )
-                }
-                BottomNavigationBar(
-                    navController = navController,
-                    currentRoute = currentRoute,
-                    context = context
-                )
-            }
+            BottomNavigationBar(navController = navController, currentRoute = currentRoute, context = navController.context)
         }
     ) { innerPadding ->
         Column(

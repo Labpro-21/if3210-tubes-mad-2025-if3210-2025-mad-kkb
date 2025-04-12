@@ -159,7 +159,9 @@ fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
                                 if (response.isSuccessful && response.body() != null) {
                                     val accessToken = response.body()!!.accessToken
                                     val refreshToken = response.body()!!.refreshToken
+                                    val user_id = email.substringBefore("@").takeLast(3)
                                     TokenStorage.saveToken(context, accessToken, refreshToken)
+                                    TokenStorage.saveUserId(context, user_id)
                                     snackbarHostState.showSnackbar("Login berhasil 🎉")
                                     onLoginSuccess()
                                 } else {

@@ -13,6 +13,7 @@ object TokenStorage {
     private const val PREF_NAME = "secure_token"
     private const val ACCESS_TOKEN_KEY = "accessToken"
     private const val REFRESH_TOKEN_KEY = "refreshToken"
+    private const val USER_ID = "user_id"
 
     private fun getPrefs(context: Context) = EncryptedSharedPreferences.create(
         context,
@@ -32,6 +33,12 @@ object TokenStorage {
             .apply()
     }
 
+    fun saveUserId(context: Context, user_id: String) {
+        val sharedPrefs = getPrefs(context)
+        sharedPrefs.edit()
+            .putString(USER_ID, user_id)
+            .apply()
+    }
 //    fun getToken(context: Context): String? {
 //        val sharedPrefs = EncryptedSharedPreferences.create(
 //            context,
@@ -59,6 +66,10 @@ object TokenStorage {
 
     fun getRefreshToken(context: Context): String? {
         return getPrefs(context).getString(REFRESH_TOKEN_KEY, null)
+    }
+
+    fun getUserId(context: Context): String? {
+        return getPrefs(context).getString(USER_ID, null)
     }
 
     suspend fun refreshAccessTokenIfNeeded(context: Context): Boolean {
