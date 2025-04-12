@@ -18,6 +18,7 @@ import androidx.navigation.NavController
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
@@ -26,6 +27,8 @@ import androidx.navigation.compose.rememberNavController
 import com.kkb.purrytify.data.remote.RetrofitInstance
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.kkb.purrytify.viewmodel.SongViewModel
 
 
 @Composable
@@ -36,6 +39,10 @@ fun ProfileScreen(    navController: NavController = rememberNavController(), //
     var profile by remember { mutableStateOf<ProfileResponse?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
+    val viewModel = hiltViewModel<SongViewModel>()
+    val totalSongs by viewModel.totalSongsCount.collectAsState()
+    val likedSongs by viewModel.likedSongsCount.collectAsState()
+    val listenedSongs by viewModel.listenedSongsCount.collectAsState()
 
     // ✅ LaunchedEffect = coroutine-safe zone untuk suspend function, semacam async kayaknya
     LaunchedEffect(Unit) {
@@ -141,9 +148,9 @@ fun ProfileScreen(    navController: NavController = rememberNavController(), //
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                ProfileStat("135", "SONGS")
-                ProfileStat("32", "LIKED")
-                ProfileStat("50", "LISTENED")
+                ProfileStat(totalSongs.toString(), "SONGS")
+                ProfileStat(likedSongs.toString(), "LIKED")
+                ProfileStat(listenedSongs.toString(), "LISTENED")
             }
 
             Spacer(modifier = Modifier.height(40.dp))
