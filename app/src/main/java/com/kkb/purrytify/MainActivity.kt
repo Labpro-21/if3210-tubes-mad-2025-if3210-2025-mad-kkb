@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import com.kkb.purrytify.TokenStorage.refreshAccessTokenIfNeeded
 import com.kkb.purrytify.viewmodel.SongViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.compose.foundation.layout.Column
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -30,27 +31,34 @@ class MainActivity : ComponentActivity() {
 
             setContent {
                 val navController = rememberNavController()
-                NavHost(navController = navController, startDestination = initialRoute) {
-                    composable("login") {
-                        LoginScreen(onLoginSuccess = {
-                            navController.navigate("home") {
-                                popUpTo("login") { inclusive = true }
-                            }
-                        })
+                val connectivityObserver = remember { ConnectivityObserver(context) }
+                val isConnected by connectivityObserver.observe().collectAsState(initial = true)
+
+                Column {
+                    if (!isConnected) {
+                        NoInternetPopup()
                     }
-                    composable("home") {
-                        HomeScreen(navController = navController, currentRoute = "home")
-                    }
-                    composable("profile") {
-                        ProfileScreen(navController = navController, currentRoute = "profile")
-                    }
-                    composable("library") {
-                        LibraryScreen(navController = navController, currentRoute = "library")
-                    }
-                    composable("track") {
-                        val backStackEntry = remember {
-                            navController.getBackStackEntry("home")
+                    NavHost(navController = navController, startDestination = initialRoute) {
+                        composable("login") {
+                            LoginScreen(onLoginSuccess = {
+                                navController.navigate("home") {
+                                    popUpTo("login") { inclusive = true }
+                                }
+                            })
                         }
+                        composable("home") {
+                            HomeScreen(navController = navController, currentRoute = "home")
+                        }
+                        composable("profile") {
+                            ProfileScreen(navController = navController, currentRoute = "profile")
+                        }
+                        composable("library") {
+                            LibraryScreen(navController = navController, currentRoute = "library")
+                        }
+                        composable("track") {
+                            val backStackEntry = remember(navController) {
+                                navController.getBackStackEntry("home")
+                            }
 
                         val viewModel: SongViewModel = hiltViewModel(backStackEntry)
                         val songs by viewModel.songs.collectAsState()
@@ -70,6 +78,7 @@ class MainActivity : ComponentActivity() {
 //                        selectedSong?.let {
 //                            TrackScreen(song = it)
 //                        }
+                        }
                     }
                 }
             }
