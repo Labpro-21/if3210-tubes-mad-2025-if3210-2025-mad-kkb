@@ -1,6 +1,5 @@
 package com.kkb.purrytify
 
-import android.media.MediaPlayer
 import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.Image
@@ -23,14 +22,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.kkb.purrytify.data.model.Song
@@ -40,7 +37,13 @@ import kotlinx.coroutines.delay
 
 //@Preview
 @Composable
-fun TrackScreen(songs: List<UserSong>, initialIndex: Int) {
+
+fun TrackScreen(
+    songs: List<Song>,
+    initialIndex: Int,
+    navController: NavController,
+    viewModel: SongViewModel = hiltViewModel()
+) {
     val context = LocalContext.current
     val contentResolver = context.contentResolver
     val viewModel = hiltViewModel<SongViewModel>()
@@ -51,11 +54,13 @@ fun TrackScreen(songs: List<UserSong>, initialIndex: Int) {
     var playbackProgress by remember { mutableStateOf(0f) }
     var duration by remember { mutableStateOf(1f) }
 
+    var showMenu by remember { mutableStateOf(false) }
+
     val uri = Uri.parse(currentSong.filePath)
 
     LaunchedEffect(currentIndex) {
         MediaPlayerManager.play(
-            song = currentSong, // Pass the current song
+            song = currentSong,
             uri = uri,
             contentResolver = contentResolver,
             onError = { Log.e("TrackScreen", "Playback error: ${it.message}") }
@@ -75,14 +80,15 @@ fun TrackScreen(songs: List<UserSong>, initialIndex: Int) {
             delay(500)
         }
     }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFFB31217), // Top gradient
-                        Color(0xFF000000)  // Bottom gradient
+                        Color(0xFFB31217),
+                        Color(0xFF000000)
                     )
                 )
             )
@@ -94,26 +100,45 @@ fun TrackScreen(songs: List<UserSong>, initialIndex: Int) {
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
         ) {
-            // Top icons row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(
-                    imageVector = Icons.Default.ExpandMore,
-                    contentDescription = "Back",
-                    tint = Color.White
-                )
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Menu",
-                    tint = Color.White
-                )
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(
+                        imageVector = Icons.Default.ExpandMore,
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
+                }
+
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Menu",
+                            tint = Color.White
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Hapus Lagu") },
+                            onClick = {
+                                showMenu = false
+                                viewModel.deleteSong(currentSong)
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Album Art
             val painter = rememberAsyncImagePainter(
                 ImageRequest.Builder(LocalContext.current)
                     .data(currentSong.coverPath)
@@ -121,8 +146,9 @@ fun TrackScreen(songs: List<UserSong>, initialIndex: Int) {
                     .error(R.drawable.album_placeholder)
                     .build()
             )
+
             Image(
-                painter = painter, // Replace with your actual drawable
+                painter = painter,
                 contentDescription = "Album Art",
                 modifier = Modifier
                     .size(280.dp)
@@ -131,14 +157,13 @@ fun TrackScreen(songs: List<UserSong>, initialIndex: Int) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // title
             Text(
                 text = currentSong.title,
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
-            // artist
+
             Text(
                 text = currentSong.artist,
                 color = Color.LightGray,
@@ -162,7 +187,6 @@ fun TrackScreen(songs: List<UserSong>, initialIndex: Int) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Playback progress
             Slider(
                 value = playbackProgress,
                 onValueChange = { playbackProgress = it },
@@ -186,13 +210,20 @@ fun TrackScreen(songs: List<UserSong>, initialIndex: Int) {
                 modifier = Modifier.fillMaxWidth(0.9f),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(String.format("%d:%02d", currentSeconds / 60, currentSeconds % 60), color = Color.White, fontSize = 12.sp)
-                Text(String.format("%d:%02d", totalSeconds / 60, totalSeconds % 60), color = Color.White, fontSize = 12.sp)
+                Text(
+                    String.format("%d:%02d", currentSeconds / 60, currentSeconds % 60),
+                    color = Color.White,
+                    fontSize = 12.sp
+                )
+                Text(
+                    String.format("%d:%02d", totalSeconds / 60, totalSeconds % 60),
+                    color = Color.White,
+                    fontSize = 12.sp
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Playback controls
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -201,15 +232,20 @@ fun TrackScreen(songs: List<UserSong>, initialIndex: Int) {
                 IconButton(onClick = {
                     if (currentIndex > 0) currentIndex--
                     else currentIndex = songs.lastIndex
-                    Log.d("curindex", "index: ${currentIndex}")
                 }) {
-                    Icon(Icons.Default.SkipPrevious, contentDescription = "Previous", tint = Color.White, modifier = Modifier.size(32.dp))
+                    Icon(
+                        Icons.Default.SkipPrevious,
+                        contentDescription = "Previous",
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
                 }
+
                 IconButton(
                     onClick = {
                         if (!isPlaying) {
                             MediaPlayerManager.play(
-                                song = currentSong, // Pass the current song
+                                song = currentSong,
                                 uri = uri,
                                 contentResolver = contentResolver,
                                 onError = { e -> Log.e("TrackScreen", "Error: ${e.message}") }
@@ -217,7 +253,7 @@ fun TrackScreen(songs: List<UserSong>, initialIndex: Int) {
                         } else {
                             MediaPlayerManager.pause()
                         }
-                        isPlaying = MediaPlayerManager.isPlaying.value // Use .value to access StateFlow
+                        isPlaying = MediaPlayerManager.isPlaying.value
                     },
                     modifier = Modifier
                         .size(64.dp)
@@ -230,16 +266,19 @@ fun TrackScreen(songs: List<UserSong>, initialIndex: Int) {
                         modifier = Modifier.size(32.dp)
                     )
                 }
+
                 IconButton(onClick = {
                     if (currentIndex < songs.lastIndex) currentIndex++
                     else currentIndex = 0
-                    Log.d("curindex", "index: ${currentIndex}")
-                    Log.d("songids", "$songs")
                 }) {
-                    Icon(Icons.Default.SkipNext, contentDescription = "Next", tint = Color.White, modifier = Modifier.size(32.dp))
+                    Icon(
+                        Icons.Default.SkipNext,
+                        contentDescription = "Next",
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
                 }
             }
         }
     }
 }
-

@@ -1,8 +1,8 @@
 package com.kkb.purrytify
 
 import android.net.Uri
-import android.util.Log
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material3.*
@@ -10,20 +10,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.kkb.purrytify.data.model.Song
 import com.kkb.purrytify.ui.components.SongView
 import com.kkb.purrytify.ui.components.SongViewBig
 import com.kkb.purrytify.util.MediaPlayerManager
 import com.kkb.purrytify.viewmodel.SongViewModel
-import kotlinx.coroutines.launch
-
 @Preview(showBackground = true, backgroundColor = 0xFF000000)
 @Composable
 fun HomeScreenPreview() {

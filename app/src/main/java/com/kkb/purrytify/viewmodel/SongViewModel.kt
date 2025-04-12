@@ -129,7 +129,6 @@ class SongViewModel @Inject constructor(
     fun getSongById(id: Int?):Song?{
         return _songs.value.find { it.id == id }
     }
-
     fun toggleLike(songId: Int?) {
         if (songId == null) return
 
@@ -182,7 +181,13 @@ class SongViewModel @Inject constructor(
         0
     )
 
+    fun deleteSong(song: Song) {
+        viewModelScope.launch {
+            songDao.delete(song)
+            refreshSongs() // refresh after deleting
+        }
 
+    }
 
 //    fun insertSong(song: Song) {
 //        viewModelScope.launch {
