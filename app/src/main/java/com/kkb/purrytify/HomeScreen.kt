@@ -54,7 +54,6 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
             BottomNavigationBar(
                 navController = navController,
                 currentRoute = currentRoute,
-                //clear token
                 onLogout = {
                     TokenStorage.clearToken(context)
                     navController.navigate("login"){
