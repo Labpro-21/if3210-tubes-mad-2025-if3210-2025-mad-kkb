@@ -16,6 +16,8 @@ object MediaPlayerManager {
     private val _currentSong = MutableStateFlow<Song?>(null)
     val currentSong: StateFlow<Song?> = _currentSong
 
+    private var currentPosition: Int = 0
+
     fun play(
         song: Song,
         uri: Uri,
@@ -23,17 +25,43 @@ object MediaPlayerManager {
         onError: (Exception) -> Unit = {}
     ) {
         try {
-            stop() // Stop any existing playback
+            val isResuming = _currentSong.value?.id == song.id && currentPosition > 0
+
+            if (isResuming) {
+                mediaPlayer?.let {
+                    if (!it.isPlaying) {
+                        it.start()
+                        _isPlaying.value = true
+                        Log.d("MediaPlayerManager", "Playback resumed at $currentPosition ms")
+                        return
+                    }
+                }
+            } else {
+                stop()
+                currentPosition = 0
+            }
+
             val afd = contentResolver.openAssetFileDescriptor(uri, "r")
             if (afd != null) {
-                mediaPlayer = MediaPlayer().apply {
-                    setDataSource(afd.fileDescriptor)
-                    prepare()
-                    start()
+                afd.use { // Pastikan afd ditutup setelah digunakan
+                    mediaPlayer = MediaPlayer().apply {
+                        setDataSource(it.fileDescriptor)
+
+                        setOnPreparedListener {
+                            start()
+                            _isPlaying.value = true
+                            Log.d("MediaPlayerManager", "Playback started from beginning")
+                        }
+
+                        setOnCompletionListener {
+                            stop()
+                        }
+
+                        prepareAsync()
+                    }
                 }
+
                 _currentSong.value = song
-                _isPlaying.value = true
-                Log.d("MediaPlayerManager", "Playback started")
             }
         } catch (e: Exception) {
             onError(e)
@@ -42,9 +70,14 @@ object MediaPlayerManager {
     }
 
     fun pause() {
-        mediaPlayer?.pause()
-        _isPlaying.value = false
-        Log.d("MediaPlayerManager", "Playback paused")
+        mediaPlayer?.let {
+            if (it.isPlaying) {
+                currentPosition = it.currentPosition
+                it.pause()
+                _isPlaying.value = false
+                Log.d("MediaPlayerManager", "Playback paused at $currentPosition ms")
+            }
+        }
     }
 
     fun stop() {
@@ -52,6 +85,7 @@ object MediaPlayerManager {
         mediaPlayer = null
         _isPlaying.value = false
         _currentSong.value = null
+        currentPosition = 0
         Log.d("MediaPlayerManager", "Playback stopped")
     }
 

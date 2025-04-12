@@ -30,6 +30,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.kkb.purrytify.data.model.Song
 import com.kkb.purrytify.util.MediaPlayerManager
 import kotlinx.coroutines.delay
@@ -111,7 +112,11 @@ fun TrackScreen(songs: List<Song>, initialIndex: Int) {
 
             // Album Art
             val painter = rememberAsyncImagePainter(
-                model = currentSong.coverPath ?: R.drawable.album_placeholder
+                ImageRequest.Builder(LocalContext.current)
+                    .data(currentSong.coverPath)
+                    .placeholder(R.drawable.album_placeholder)
+                    .error(R.drawable.album_placeholder)
+                    .build()
             )
             Image(
                 painter = painter, // Replace with your actual drawable
