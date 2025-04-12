@@ -62,7 +62,7 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
     Scaffold(
         containerColor = Color.Black,
         bottomBar = {
-            BottomNavigationBar(navController = navController, currentRoute = currentRoute)
+            BottomNavigationBar(navController = navController, currentRoute = currentRoute, context = navController.context)
         }
     ) { innerPadding ->
         Column(

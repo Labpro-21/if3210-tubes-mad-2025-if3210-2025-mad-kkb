@@ -46,4 +46,6 @@ object MediaPlayerManager {
         isPlaying = false
         Log.d("MediaPlayerManager", "Playback stopped")
     }
+
+    fun getPlayer(): MediaPlayer? = mediaPlayer
 }
