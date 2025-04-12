@@ -49,7 +49,17 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
     Scaffold(
         containerColor = Color.Black,
         bottomBar = {
-            BottomNavigationBar(navController = navController, currentRoute = currentRoute)
+            BottomNavigationBar(
+                navController = navController,
+                currentRoute = currentRoute,
+                //clear token
+                onLogout = {
+                    navController.navigate("login"){
+                        popUpTo("home"){
+                            inclusive = true
+                        }
+                    }
+                })
         }
     ) { innerPadding ->
         Column(
