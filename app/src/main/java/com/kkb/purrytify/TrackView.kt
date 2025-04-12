@@ -51,6 +51,7 @@ fun TrackScreen(songs: List<Song>, initialIndex: Int) {
 
     LaunchedEffect(currentIndex) {
         MediaPlayerManager.play(
+            song = currentSong, // Pass the current song
             uri = uri,
             contentResolver = contentResolver,
             onError = { Log.e("TrackScreen", "Playback error: ${it.message}") }
@@ -191,8 +192,9 @@ fun TrackScreen(songs: List<Song>, initialIndex: Int) {
                 }
                 IconButton(
                     onClick = {
-                        if (!MediaPlayerManager.isPlaying) {
+                        if (!isPlaying) {
                             MediaPlayerManager.play(
+                                song = currentSong, // Pass the current song
                                 uri = uri,
                                 contentResolver = contentResolver,
                                 onError = { e -> Log.e("TrackScreen", "Error: ${e.message}") }
@@ -200,8 +202,8 @@ fun TrackScreen(songs: List<Song>, initialIndex: Int) {
                         } else {
                             MediaPlayerManager.pause()
                         }
-                        isPlaying = MediaPlayerManager.isPlaying
-                              },
+                        isPlaying = MediaPlayerManager.isPlaying.value // Use .value to access StateFlow
+                    },
                     modifier = Modifier
                         .size(64.dp)
                         .background(Color.White, shape = CircleShape)
