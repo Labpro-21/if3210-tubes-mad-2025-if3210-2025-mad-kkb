@@ -42,14 +42,6 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
             BottomNavigationBar(
                 navController = navController,
                 currentRoute = currentRoute,
-                onLogout = {
-                    TokenStorage.clearToken(context)
-                    navController.navigate("login"){
-                        popUpTo("home"){
-                            inclusive = true
-                        }
-                    }
-                },
                 context = context
             )
         }
