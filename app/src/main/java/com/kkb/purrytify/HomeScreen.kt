@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
@@ -36,6 +37,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
     val coroutineScope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
     val songs by viewModel.songs.collectAsState()
+    val context = LocalContext.current
     if (showBottomSheet) {
         UploadSongBottomSheet(
             sheetState = sheetState,
@@ -54,12 +56,15 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                 currentRoute = currentRoute,
                 //clear token
                 onLogout = {
+                    TokenStorage.clearToken(context)
                     navController.navigate("login"){
                         popUpTo("home"){
                             inclusive = true
                         }
                     }
-                })
+                },
+                context = context
+            )
         }
     ) { innerPadding ->
         Column(

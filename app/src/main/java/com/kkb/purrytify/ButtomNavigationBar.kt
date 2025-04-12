@@ -1,5 +1,6 @@
 package com.kkb.purrytify
 
+import android.content.Context
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.*
@@ -14,7 +15,8 @@ import androidx.navigation.NavController
 fun BottomNavigationBar(
     navController: NavController,
     currentRoute: String,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    context: Context
 ) {
     val items = listOf(
         BottomNavItem.Home,

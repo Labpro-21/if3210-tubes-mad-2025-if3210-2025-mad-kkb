@@ -35,6 +35,7 @@ fun ProfileScreen(    navController: NavController = rememberNavController(), //
 ) {
     var profile by remember { mutableStateOf<ProfileResponse?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
 
     // ✅ LaunchedEffect = coroutine-safe zone untuk suspend function, semacam async kayaknya
     LaunchedEffect(Unit) {
@@ -67,7 +68,8 @@ fun ProfileScreen(    navController: NavController = rememberNavController(), //
                             inclusive = true
                         }
                     }
-                }
+                },
+                context = context
             )
         }
     ) { innerPadding ->
