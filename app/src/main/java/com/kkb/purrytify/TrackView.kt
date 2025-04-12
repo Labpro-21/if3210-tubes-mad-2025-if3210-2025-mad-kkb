@@ -39,7 +39,7 @@ import kotlinx.coroutines.delay
 @Composable
 
 fun TrackScreen(
-    songs: List<Song>,
+    songs: List<UserSong>,
     initialIndex: Int,
     navController: NavController,
     viewModel: SongViewModel = hiltViewModel()

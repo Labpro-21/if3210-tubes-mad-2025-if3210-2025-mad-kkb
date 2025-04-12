@@ -106,6 +106,10 @@ object TokenStorage {
                 val newAccessToken = response.body()!!.accessToken
                 val newRefreshToken = response.body()!!.refreshToken
                 saveToken(context, newAccessToken, newRefreshToken)
+                val existingUserId = getUserId(context)
+                if (existingUserId != null) {
+                    saveUserId(context, existingUserId)
+                }
                 Log.d("TokenStorage", "Token berhasil di-refresh")
                 true
             } else {

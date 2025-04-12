@@ -13,4 +13,7 @@ interface SongDao {
 
     @Delete
     suspend fun delete(song: Song)
+
+    @Query("DELETE FROM songs WHERE id = :id")
+    suspend fun deleteById(id: Int)
 }

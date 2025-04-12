@@ -181,9 +181,9 @@ class SongViewModel @Inject constructor(
         0
     )
 
-    fun deleteSong(song: Song) {
+    fun deleteSong(song: UserSong) {
         viewModelScope.launch {
-            songDao.delete(song)
+            songDao.deleteById(song.songId)
             refreshSongs() // refresh after deleting
         }
 

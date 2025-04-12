@@ -23,4 +23,5 @@ interface UserSongDao {
 
     @Delete
     suspend fun delete(usersongs: UserSongs)
+
 }
