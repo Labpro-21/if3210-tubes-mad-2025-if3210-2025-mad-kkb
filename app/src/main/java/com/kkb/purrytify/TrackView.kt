@@ -36,13 +36,28 @@ import kotlinx.coroutines.delay
 
 //@Preview
 @Composable
-fun TrackScreen(song: Song) {
+fun TrackScreen(songs: List<Song>, initialIndex: Int) {
     val context = LocalContext.current
     val contentResolver = context.contentResolver
-    var isPlayingState by remember { mutableStateOf(MediaPlayerManager.isPlaying) }
+
+    var currentIndex by remember { mutableStateOf(initialIndex) }
+    val currentSong = songs.getOrNull(currentIndex) ?: return
+
     var isPlaying by remember { mutableStateOf(false) }
     var playbackProgress by remember { mutableStateOf(0f) }
     var duration by remember { mutableStateOf(1f) }
+
+    val uri = Uri.parse(currentSong.filePath)
+
+    LaunchedEffect(currentIndex) {
+        MediaPlayerManager.play(
+            uri = uri,
+            contentResolver = contentResolver,
+            onError = { Log.e("TrackScreen", "Playback error: ${it.message}") }
+        )
+        isPlaying = true
+    }
+
     LaunchedEffect(isPlaying) {
         while (isPlaying) {
             val player = MediaPlayerManager.getPlayer()
@@ -95,7 +110,7 @@ fun TrackScreen(song: Song) {
 
             // Album Art
             val painter = rememberAsyncImagePainter(
-                model = song.coverPath ?: R.drawable.album_placeholder
+                model = currentSong.coverPath ?: R.drawable.album_placeholder
             )
             Image(
                 painter = painter, // Replace with your actual drawable
@@ -109,14 +124,14 @@ fun TrackScreen(song: Song) {
 
             // title
             Text(
-                text = song.title,
+                text = currentSong.title,
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
             // artist
             Text(
-                text = song.artist,
+                text = currentSong.artist,
                 color = Color.LightGray,
                 fontSize = 14.sp
             )
@@ -167,15 +182,15 @@ fun TrackScreen(song: Song) {
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.SkipPrevious,
-                    contentDescription = "Previous",
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
+                IconButton(onClick = {
+                    if (currentIndex > 0) currentIndex--
+                    else currentIndex = songs.lastIndex
+                    Log.d("curindex", "index: ${currentIndex}")
+                }) {
+                    Icon(Icons.Default.SkipPrevious, contentDescription = "Previous", tint = Color.White, modifier = Modifier.size(32.dp))
+                }
                 IconButton(
                     onClick = {
-                        val uri = Uri.parse(song.filePath)
                         if (!MediaPlayerManager.isPlaying) {
                             MediaPlayerManager.play(
                                 uri = uri,
@@ -198,12 +213,13 @@ fun TrackScreen(song: Song) {
                         modifier = Modifier.size(32.dp)
                     )
                 }
-                Icon(
-                    imageVector = Icons.Default.SkipNext,
-                    contentDescription = "Next",
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
+                IconButton(onClick = {
+                    if (currentIndex < songs.lastIndex) currentIndex++
+                    else currentIndex = 0
+                    Log.d("curindex", "index: ${currentIndex}")
+                }) {
+                    Icon(Icons.Default.SkipNext, contentDescription = "Next", tint = Color.White, modifier = Modifier.size(32.dp))
+                }
             }
         }
     }

@@ -53,9 +53,19 @@ class MainActivity : ComponentActivity() {
                         }
 
                         val viewModel: SongViewModel = hiltViewModel(backStackEntry)
+                        val songs by viewModel.songs.collectAsState()
                         val selectedSong = viewModel.getSelectedSong()
-                        selectedSong?.let {
-                            TrackScreen(song = it)
+                        selectedSong?.let { song ->
+                            val index = songs.indexOfFirst { it.id == song.id }
+                            Log.d("idsong", "id: $index")
+                            if (index != -1) {
+                                TrackScreen(
+                                    songs = songs,
+                                    initialIndex = index
+                                )
+                            } else {
+                                Log.e("idsong", "Song not found in the list")
+                            }
                         }
 //                        selectedSong?.let {
 //                            TrackScreen(song = it)
