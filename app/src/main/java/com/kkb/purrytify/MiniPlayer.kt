@@ -22,7 +22,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.Image
 import androidx.compose.material3.Text
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.kkb.purrytify.data.model.Song
 import com.kkb.purrytify.R
 
@@ -50,8 +52,12 @@ fun MiniPlayer(
             // Album Art
             Image(
                 painter = rememberAsyncImagePainter(
-                    model = currentSong.coverPath ?: R.drawable.album_placeholder
-                ),
+                    ImageRequest.Builder(LocalContext.current)
+                        .data(currentSong.coverPath)
+                        .placeholder(R.drawable.album_placeholder)
+                        .error(R.drawable.album_placeholder)
+                        .build()
+                    ),
                 contentDescription = "Album Art",
                 modifier = Modifier
                     .size(48.dp)
