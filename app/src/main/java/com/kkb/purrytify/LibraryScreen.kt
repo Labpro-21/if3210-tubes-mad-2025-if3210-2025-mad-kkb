@@ -46,31 +46,42 @@ import androidx.navigation.NavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.kkb.purrytify.data.model.Song
+import com.kkb.purrytify.data.model.UserSongs
 import com.kkb.purrytify.ui.components.SongView
 import com.kkb.purrytify.ui.components.SongViewBig
+import com.kkb.purrytify.viewmodel.LikeViewModel
 import com.kkb.purrytify.viewmodel.SongViewModel
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(navController: NavController, currentRoute: String){
     val viewModel = hiltViewModel<SongViewModel>()
+    val likeviewModel = hiltViewModel<LikeViewModel>()
     val sheetState = rememberModalBottomSheetState( skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
     val songs by viewModel.songs.collectAsState()
+    val likes by likeviewModel.likes.collectAsState()
     var selectedTab by remember { mutableStateOf("All") }
     val context = LocalContext.current
+    val user_id = TokenStorage.getUserId(context)?.toIntOrNull()
 
-    val displayedSongs = remember(selectedTab, songs) {
-        if (selectedTab == "Liked") songs.filter { it.isLiked } else songs
+    val displayedSongs = remember(selectedTab, songs, likes) {
+        if (selectedTab == "Liked") {
+            val likedSongIds = likes.filter { it.userId == user_id }.map { it.songId }.toSet()
+            songs.filter { it.id in likedSongIds }
+        } else {
+            songs
+        }
     }
     if (showBottomSheet) {
         UploadSongBottomSheet(
             sheetState = sheetState,
             onDismiss = { showBottomSheet = false },
         ) { title, artist, fileUri, coverPath ->
-            viewModel.insertSong(Song(title = title, artist = artist, filePath = fileUri, coverPath = coverPath))
+            viewModel.insertSong(context, Song(title = title, artist = artist, filePath = fileUri, coverPath = coverPath))
 //            Log.d(viewModel.getSongs())
             showBottomSheet = false
         }

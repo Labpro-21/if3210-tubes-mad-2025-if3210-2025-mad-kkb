@@ -6,7 +6,7 @@ import com.kkb.purrytify.data.model.Song
 @Dao
 interface SongDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(song: Song)
+    suspend fun insert(song: Song): Long
 
     @Query("SELECT * FROM songs")
     suspend fun getAllSongs(): List<Song>

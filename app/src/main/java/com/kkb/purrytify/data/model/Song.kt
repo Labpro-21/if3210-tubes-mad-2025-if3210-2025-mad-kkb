@@ -10,5 +10,4 @@ data class Song(
     val artist: String,
     val filePath: String,
     val coverPath: String? = null,
-    val isLiked: Boolean = false
 )
