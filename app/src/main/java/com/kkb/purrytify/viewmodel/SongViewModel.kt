@@ -43,8 +43,8 @@ class SongViewModel @Inject constructor(
         _selectedSong.value = song
     }
 
-    fun getSelectedSong():Song?{
-        return _selectedSong.value
+    fun getSongById(id: Int?):Song?{
+        return _songs.value.find { it.id == id }
     }
 
 //    fun insertSong(song: Song) {

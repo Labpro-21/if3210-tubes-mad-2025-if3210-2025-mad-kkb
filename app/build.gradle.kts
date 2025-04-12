@@ -57,6 +57,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.espresso.core)
+    implementation("androidx.recyclerview:recyclerview:1.3.1")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -70,9 +71,10 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.48")
     ksp("com.google.dagger:hilt-compiler:2.48")
     ksp("androidx.room:room-compiler:2.6.1")
+    ksp("com.github.bumptech.glide:compiler:4.16.0")
     implementation("com.squareup:javapoet:1.13.0")
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0-alpha01")
     implementation("io.coil-kt:coil-compose:2.4.0")
-
+    implementation("com.github.bumptech.glide:glide:4.16.0")
 
 }

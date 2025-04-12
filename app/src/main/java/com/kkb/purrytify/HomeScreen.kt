@@ -82,7 +82,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                     items(songs) { song ->
                         SongViewBig(song = song, onClick = {
                             viewModel.selectSong(song)
-                            navController.navigate("track")
+                            navController.navigate("track/${song.id}")
                         })
                     }
                 }
@@ -95,7 +95,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                     items(songs) { song ->
                         SongView(song = song, onClick = {
                             viewModel.selectSong(song)
-                            navController.navigate("track")
+                            navController.navigate("track/${song.id}")
                         })
                     }
                 }
