@@ -18,6 +18,7 @@ import androidx.navigation.navArgument
 import com.kkb.purrytify.TokenStorage.refreshAccessTokenIfNeeded
 import com.kkb.purrytify.viewmodel.SongViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.compose.foundation.layout.Column
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -32,32 +33,53 @@ class MainActivity : ComponentActivity() {
 
             setContent {
                 val navController = rememberNavController()
-                NavHost(navController = navController, startDestination = initialRoute) {
-                    composable("login") {
-                        LoginScreen(onLoginSuccess = {
-                            navController.navigate("home") {
-                                popUpTo("login") { inclusive = true }
-                            }
-                        })
+                val connectivityObserver = remember { ConnectivityObserver(context) }
+                val isConnected by connectivityObserver.observe().collectAsState(initial = true)
+
+                Column {
+                    if (!isConnected) {
+                        NoInternetPopup()
                     }
-                    composable("home") {
-                        HomeScreen(navController = navController, currentRoute = "home")
-                    }
-                    composable("profile") {
-                        ProfileScreen(navController = navController, currentRoute = "profile")
-                    }
-                    composable("library") {
-                        LibraryScreen(navController = navController, currentRoute = "library")
-                    }
+                    NavHost(navController = navController, startDestination = initialRoute) {
+                        composable("login") {
+                            LoginScreen(onLoginSuccess = {
+                                navController.navigate("home") {
+                                    popUpTo("login") { inclusive = true }
+                                }
+                            })
+                        }
+                        composable("home") {
+                            HomeScreen(navController = navController, currentRoute = "home")
+                        }
+                        composable("profile") {
+                            ProfileScreen(navController = navController, currentRoute = "profile")
+                        }
+                        composable("library") {
+                            LibraryScreen(navController = navController, currentRoute = "library")
+                        }
+
                     composable(
                         "track/{songId}",
                         arguments = listOf(navArgument("songId") { type = NavType.IntType })
                     ) { backStackEntry ->
                         val songId = backStackEntry.arguments?.getInt("songId")
                         val viewModel: SongViewModel = hiltViewModel()
-                        val song = viewModel.getSongById(songId) // You implement this
-                        song?.let { TrackScreen(song = it) }
+                        val selectedSong = viewModel.getSongById(songId) // You implement this
+                        val songs by viewModel.songs.collectAsState()
+                        selectedSong?.let { song ->
+                            val index = songs.indexOfFirst { it.id == song.id }
+                            Log.d("idsong", "id: $index")
+                            if (index != -1) {
+                                TrackScreen(
+                                    songs = songs,
+                                    initialIndex = index
+                                )
+                            } else {
+                                Log.e("idsong", "Song not found in the list")
+                            }
+                        }
                     }
+
 
 //                    composable("track") {
 //                        val backStackEntry = remember {
@@ -69,10 +91,7 @@ class MainActivity : ComponentActivity() {
 //                        selectedSong?.let {
 //                            TrackScreen(song = it)
 //                        }
-////                        selectedSong?.let {
-////                            TrackScreen(song = it)
-////                        }
-//                    }
+                    }
                 }
             }
         }
