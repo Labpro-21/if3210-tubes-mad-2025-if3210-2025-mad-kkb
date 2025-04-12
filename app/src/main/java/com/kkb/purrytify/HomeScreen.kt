@@ -18,6 +18,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kkb.purrytify.data.model.Song
 import com.kkb.purrytify.ui.components.SongView
+import com.kkb.purrytify.ui.components.SongViewBig
 import com.kkb.purrytify.viewmodel.SongViewModel
 import kotlinx.coroutines.launch
 
@@ -33,21 +34,8 @@ fun HomeScreenPreview() {
 @Composable
 fun HomeScreen(navController: NavController, currentRoute: String) {
     val viewModel = hiltViewModel<SongViewModel>()
-    val sheetState = rememberModalBottomSheetState( skipPartiallyExpanded = true)
-    val coroutineScope = rememberCoroutineScope()
-    var showBottomSheet by remember { mutableStateOf(false) }
     val songs by viewModel.songs.collectAsState()
     val context = LocalContext.current
-    if (showBottomSheet) {
-        UploadSongBottomSheet(
-            sheetState = sheetState,
-            onDismiss = { showBottomSheet = false },
-        ) { title, artist, fileUri, coverPath ->
-            viewModel.insertSong(Song(title = title, artist = artist, filePath = fileUri, coverPath = coverPath))
-//            Log.d(viewModel.getSongs())
-            showBottomSheet = false
-        }
-    }
     Scaffold(
         containerColor = Color.Black,
         bottomBar = {
@@ -71,20 +59,15 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("New songs", color = Color.White, fontSize = 20.sp)
-                IconButton(onClick = {
-                    // TODO: Tambahkan aksi saat tombol diklik
-                    coroutineScope.launch {
-                        showBottomSheet = true
-                        sheetState.show()
-                    }
-
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add",
-                        tint = Color.White
-                    )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .padding(horizontal = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ){
+                    Text("New songs", color = Color.White, fontSize = 20.sp)
                 }
             }
             if(songs.isEmpty()){
@@ -97,7 +80,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
             }else{
                 LazyRow {
                     items(songs) { song ->
-                        SongView(song = song, onClick = {
+                        SongViewBig(song = song, onClick = {
                             viewModel.selectSong(song)
                             navController.navigate("track")
                         })
@@ -117,7 +100,6 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                     }
                 }
             }
-
         }
     }
 }

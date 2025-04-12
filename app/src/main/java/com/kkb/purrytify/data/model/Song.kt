@@ -9,5 +9,5 @@ data class Song(
     val title: String,
     val artist: String,
     val filePath: String,
-    val coverPath: String
+    val coverPath: String? = null
 )
