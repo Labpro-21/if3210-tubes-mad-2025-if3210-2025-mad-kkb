@@ -40,15 +40,11 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
     val context = LocalContext.current
     val currentSong by MediaPlayerManager.currentSong.collectAsState()
     val isPlaying by MediaPlayerManager.isPlaying.collectAsState()
+
     Scaffold(
         containerColor = Color.Black,
         bottomBar = {
-            Box {
-                BottomNavigationBar(
-                    navController = navController,
-                    currentRoute = currentRoute,
-                    context = context
-                )
+            Column { // Changed from Box to Column
                 if (currentSong != null) {
                     MiniPlayer(
                         currentSong = currentSong!!,
@@ -69,6 +65,11 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                         }
                     )
                 }
+                BottomNavigationBar(
+                    navController = navController,
+                    currentRoute = currentRoute,
+                    context = context
+                )
             }
         }
     ) { innerPadding ->

@@ -1,6 +1,7 @@
 package com.kkb.purrytify
 
 import SongAdapter
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,9 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -46,8 +44,7 @@ import androidx.navigation.NavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.kkb.purrytify.data.model.Song
-import com.kkb.purrytify.ui.components.SongView
-import com.kkb.purrytify.ui.components.SongViewBig
+import com.kkb.purrytify.util.MediaPlayerManager
 import com.kkb.purrytify.viewmodel.SongViewModel
 import kotlinx.coroutines.launch
 
@@ -61,6 +58,8 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
     val songs by viewModel.songs.collectAsState()
     var selectedTab by remember { mutableStateOf("All") }
     val context = LocalContext.current
+    val currentSong by MediaPlayerManager.currentSong.collectAsState()
+    val isPlaying by MediaPlayerManager.isPlaying.collectAsState()
 
     val displayedSongs = remember(selectedTab, songs) {
         if (selectedTab == "Liked") songs.filter { it.isLiked } else songs
@@ -78,7 +77,33 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
     Scaffold(
         containerColor = Color.Black,
         bottomBar = {
-            BottomNavigationBar(navController = navController, currentRoute = currentRoute, context = navController.context)
+            Column { // Changed from Box to Column
+                if (currentSong != null) {
+                    MiniPlayer(
+                        currentSong = currentSong!!,
+                        isPlaying = isPlaying,
+                        onPlayPause = {
+                            if (isPlaying) MediaPlayerManager.pause()
+                            else currentSong?.let { song ->
+                                MediaPlayerManager.play(
+                                    song = song,
+                                    uri = Uri.parse(song.filePath),
+                                    contentResolver = context.contentResolver
+                                )
+                            }
+                        },
+                        onNext = { /* Implement next song logic */ },
+                        onClick = {
+                            navController.navigate("track/${currentSong!!.id}")
+                        }
+                    )
+                }
+                BottomNavigationBar(
+                    navController = navController,
+                    currentRoute = currentRoute,
+                    context = context
+                )
+            }
         }
     ) { innerPadding ->
         Column(
