@@ -15,7 +15,6 @@ import androidx.navigation.NavController
 fun BottomNavigationBar(
     navController: NavController,
     currentRoute: String,
-    onLogout: () -> Unit,
     context: Context
 ) {
     val items = listOf(
@@ -74,7 +73,13 @@ fun BottomNavigationBar(
                         text = { Text("Logout") },
                         onClick = {
                             showProfileMenu = false
-                            onLogout()
+                            showProfileMenu = false
+                            TokenStorage.clearToken(context)
+                            navController.navigate("login") {
+                                popUpTo("home") {
+                                    inclusive = true
+                                }
+                            }
                         }
                     )
                 }
