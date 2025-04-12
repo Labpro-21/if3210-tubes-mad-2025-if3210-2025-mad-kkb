@@ -17,9 +17,17 @@ import androidx.compose.ui.unit.*
 import androidx.compose.ui.platform.LocalContext
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import java.io.File import java.io.FileOutputStream
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.MusicNote
 
-//import kotlin.coroutines.jvm.internal.CompletedContinuation.context
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +52,7 @@ fun UploadSongBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color.Black,
+        containerColor = Color(0xFF1E1E1E),
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
         Column(
@@ -174,24 +182,41 @@ fun UploadPhotoBox(
     Box(
         modifier = Modifier
             .size(100.dp)
-            .border(BorderStroke(1.dp, Color.Gray), shape = RoundedCornerShape(8.dp))
+            .dashedBorder(color = Color.Gray, cornerRadius = 8.dp)
             .clickable { launcher.launch("image/*") },
         contentAlignment = Alignment.Center
     ) {
-        Text(selectedFileName ?: "Upload Photo", color = Color.White)
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Default.Image, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(32.dp))
+            Spacer(modifier = Modifier.height(4.dp))
+            Text("Upload Photo", fontSize = 12.sp, color = Color.White)
+        }
+
+        // Icon edit di pojok kanan bawah
+        Icon(
+            imageVector = Icons.Default.Edit,
+            contentDescription = "Edit",
+            tint = Color.White,
+            modifier = Modifier
+                .size(16.dp)
+                .align(Alignment.BottomEnd)
+                .background(Color.Black, shape = CircleShape)
+                .padding(2.dp)
+        )
     }
+
 }
 
 @Composable
 fun UploadFileBox(
     selectedFileName: String? = null,
-    onFileSelected: (Uri?) -> Unit = {}) {
+    onFileSelected: (Uri?) -> Unit = {}
+) {
     val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let {
-            // ✅ Grant temporary (persistable) permission to read the URI
             try {
                 context.contentResolver.takePersistableUriPermission(
                     it,
@@ -201,17 +226,62 @@ fun UploadFileBox(
                 e.printStackTrace()
             }
         }
-
         onFileSelected(uri)
     }
 
     Box(
         modifier = Modifier
             .size(100.dp)
-            .border(BorderStroke(1.dp, Color.Gray), shape = RoundedCornerShape(8.dp))
+            .dashedBorder(color = Color.Gray, cornerRadius = 8.dp)
             .clickable { launcher.launch(arrayOf("audio/*")) },
         contentAlignment = Alignment.Center
     ) {
-        Text(selectedFileName ?: "Upload File", color = Color.White)
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = Icons.Default.MusicNote,
+                contentDescription = null,
+                tint = Color.Gray,
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text("Upload Audio", fontSize = 12.sp, color = Color.White)
+        }
+
+        // Icon edit di pojok kanan bawah
+        Icon(
+            imageVector = Icons.Default.Edit,
+            contentDescription = "Edit",
+            tint = Color.White,
+            modifier = Modifier
+                .size(16.dp)
+                .align(Alignment.BottomEnd)
+                .background(Color.Black, shape = CircleShape)
+                .padding(2.dp)
+        )
     }
 }
+
+
+fun Modifier.dashedBorder(
+    strokeWidth: Float = 3f,
+    color: Color = Color.LightGray,
+    dashLength: Float = 10f,
+    gapLength: Float = 10f,
+    cornerRadius: Dp = 8.dp
+): Modifier = this.then(
+    Modifier.drawWithCache {
+        val stroke = Stroke(
+            width = strokeWidth,
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(dashLength, gapLength), 0f)
+        )
+        onDrawBehind {
+            drawRoundRect(
+                color = color,
+                style = stroke,
+                size = size,
+                cornerRadius = CornerRadius(cornerRadius.toPx())
+            )
+        }
+    }
+)
+

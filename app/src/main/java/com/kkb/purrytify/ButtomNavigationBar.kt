@@ -16,12 +16,15 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.DpOffset
 
 @Composable
 fun BottomNavigationBar(
@@ -36,6 +39,9 @@ fun BottomNavigationBar(
     )
 
     var showProfileMenu by remember { mutableStateOf(false) }
+    var profileIconOffset by remember { mutableStateOf(Offset.Zero) }
+
+    val density = LocalDensity.current
 
     NavigationBar(
         containerColor = Color.Black,
@@ -48,18 +54,23 @@ fun BottomNavigationBar(
                 NavigationBarItem(
                     icon = {
                         Box(
-                            modifier = Modifier.pointerInput(Unit) {
-                                detectTapGestures(
-                                    onLongPress = {
-                                        showProfileMenu = true
-                                    },
-                                    onTap = {
-                                        if (!selected) {
-                                            navController.navigate(item.route)
+                            modifier = Modifier
+                                .pointerInput(Unit) {
+                                    detectTapGestures(
+                                        onLongPress = {
+                                            showProfileMenu = true
+                                        },
+                                        onTap = {
+                                            if (!selected) {
+                                                navController.navigate(item.route)
+                                            }
                                         }
-                                    }
-                                )
-                            }
+                                    )
+                                }
+                                .onGloballyPositioned { coordinates ->
+                                    val position = coordinates.localToWindow(Offset.Zero)
+                                    profileIconOffset = position
+                                }
                         ) {
                             Icon(item.icon, contentDescription = item.title)
                         }
@@ -76,10 +87,20 @@ fun BottomNavigationBar(
                     )
                 )
 
-                // DropdownMenu di luar row scope
+                // Popup Logout tepat di atas ikon profile
                 DropdownMenu(
                     expanded = showProfileMenu,
-                    onDismissRequest = { showProfileMenu = false }
+                    onDismissRequest = { showProfileMenu = false },
+                    offset = with(density) {
+                        DpOffset(
+                            x = profileIconOffset.x.toDp(),
+                            y = (profileIconOffset.y - 60.dp.toPx()).toDp()
+                        )
+                    },
+                    modifier = Modifier
+                        .background(Color.Transparent)
+                        .padding(0.dp),
+                    containerColor = Color.Transparent
                 ) {
                     DropdownMenuItem(
                         text = {
@@ -111,9 +132,7 @@ fun BottomNavigationBar(
                             showProfileMenu = false
                             TokenStorage.clearToken(context)
                             navController.navigate("login") {
-                                popUpTo("home") {
-                                    inclusive = true
-                                }
+                                popUpTo("home") { inclusive = true }
                             }
                         },
                         modifier = Modifier

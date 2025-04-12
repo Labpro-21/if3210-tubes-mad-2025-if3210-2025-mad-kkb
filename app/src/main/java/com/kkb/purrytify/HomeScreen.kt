@@ -1,5 +1,6 @@
 package com.kkb.purrytify
 
+import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.kkb.purrytify.data.model.Song
 import com.kkb.purrytify.ui.components.SongView
 import com.kkb.purrytify.ui.components.SongViewBig
+import com.kkb.purrytify.util.MediaPlayerManager
 import com.kkb.purrytify.viewmodel.SongViewModel
 import kotlinx.coroutines.launch
 
@@ -36,14 +38,38 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
     val viewModel = hiltViewModel<SongViewModel>()
     val songs by viewModel.songs.collectAsState()
     val context = LocalContext.current
+    val currentSong by MediaPlayerManager.currentSong.collectAsState()
+    val isPlaying by MediaPlayerManager.isPlaying.collectAsState()
     Scaffold(
         containerColor = Color.Black,
         bottomBar = {
-            BottomNavigationBar(
-                navController = navController,
-                currentRoute = currentRoute,
-                context = context
-            )
+            Box {
+                BottomNavigationBar(
+                    navController = navController,
+                    currentRoute = currentRoute,
+                    context = context
+                )
+                if (currentSong != null) {
+                    MiniPlayer(
+                        currentSong = currentSong!!,
+                        isPlaying = isPlaying,
+                        onPlayPause = {
+                            if (isPlaying) MediaPlayerManager.pause()
+                            else currentSong?.let { song ->
+                                MediaPlayerManager.play(
+                                    song = song,
+                                    uri = Uri.parse(song.filePath),
+                                    contentResolver = context.contentResolver
+                                )
+                            }
+                        },
+                        onNext = { /* Implement next song logic */ },
+                        onClick = {
+                            navController.navigate("track/${currentSong!!.id}")
+                        }
+                    )
+                }
+            }
         }
     ) { innerPadding ->
         Column(
