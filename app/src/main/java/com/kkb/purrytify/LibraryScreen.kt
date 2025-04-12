@@ -58,7 +58,7 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
     val sheetState = rememberModalBottomSheetState( skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
-    val songs by viewModel.songs.collectAsState()
+    val songs by viewModel.userSongList.collectAsState()
     val likes by likeviewModel.likes.collectAsState()
     var selectedTab by remember { mutableStateOf("All") }
     val context = LocalContext.current
@@ -66,14 +66,12 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
     val currentSong by MediaPlayerManager.currentSong.collectAsState()
     val isPlaying by MediaPlayerManager.isPlaying.collectAsState()
 
-    val displayedSongs = remember(selectedTab, songs, likes) {
-        if (selectedTab == "Liked") {
-            val likedSongIds = likes.filter { it.userId == user_id }.map { it.songId }.toSet()
-            songs.filter { it.id in likedSongIds }
-        } else {
-            songs
-        }
+    val displayedSongs = if (selectedTab == "Liked") {
+        songs.filter { it.isLiked }
+    } else {
+        songs
     }
+
     if (showBottomSheet) {
         UploadSongBottomSheet(
             sheetState = sheetState,
@@ -104,7 +102,7 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
                         },
                         onNext = { /* Implement next song logic */ },
                         onClick = {
-                            navController.navigate("track/${currentSong!!.id}")
+                            navController.navigate("track/${currentSong!!.songId}")
                         }
                     )
                 }
@@ -181,8 +179,8 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
                         RecyclerView(ctx).apply {
                             layoutManager = LinearLayoutManager(ctx)
                             adapter = SongAdapter(displayedSongs) { song ->
-                                viewModel.selectSong(song)
-                                navController.navigate("track/${song.id}")
+
+                                navController.navigate("track/${song.songId}")
                             }
                         }
                     },

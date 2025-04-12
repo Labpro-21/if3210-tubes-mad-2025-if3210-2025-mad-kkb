@@ -32,11 +32,14 @@ fun HomeScreenPreview() {
 @Composable
 fun HomeScreen(navController: NavController, currentRoute: String) {
     val viewModel = hiltViewModel<SongViewModel>()
-    val songs by viewModel.songs.collectAsState()
+    val songs by viewModel.userSongList.collectAsState()
     val context = LocalContext.current
     val currentSong by MediaPlayerManager.currentSong.collectAsState()
     val isPlaying by MediaPlayerManager.isPlaying.collectAsState()
-
+    val newSongs = songs.sortedByDescending { it.createdAt }
+    val recentlyPlayedSongs = songs
+        .filter { it.lastPlayed != null }
+        .sortedByDescending { it.lastPlayed }
     Scaffold(
         containerColor = Color.Black,
         bottomBar = {
@@ -57,7 +60,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                         },
                         onNext = { /* Implement next song logic */ },
                         onClick = {
-                            navController.navigate("track/${currentSong!!.id}")
+                            navController.navigate("track/${currentSong!!.songId}")
                         }
                     )
                 }
@@ -102,10 +105,9 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                 }
             }else{
                 LazyRow {
-                    items(songs) { song ->
+                    items(newSongs) { song ->
                         SongViewBig(song = song, onClick = {
-                            viewModel.selectSong(song)
-                            navController.navigate("track/${song.id}")
+                            navController.navigate("track/${song.songId}")
                         })
                     }
                 }
@@ -115,10 +117,9 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                 Text("Recently played", color = Color.White, fontSize = 20.sp)
 
                 LazyColumn {
-                    items(songs) { song ->
+                    items(recentlyPlayedSongs) { song ->
                         SongView(song = song, onClick = {
-                            viewModel.selectSong(song)
-                            navController.navigate("track/${song.id}")
+                            navController.navigate("track/${song.songId}")
                         })
                     }
                 }

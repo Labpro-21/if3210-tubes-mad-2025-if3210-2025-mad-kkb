@@ -17,11 +17,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.kkb.purrytify.R
+import com.kkb.purrytify.UserSong
 import com.kkb.purrytify.data.model.Song
 
 @Composable
 fun SongView(
-    song: Song,
+    song: UserSong,
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {

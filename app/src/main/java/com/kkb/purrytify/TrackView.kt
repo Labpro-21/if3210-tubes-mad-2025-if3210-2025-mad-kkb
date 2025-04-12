@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +37,7 @@ import kotlinx.coroutines.delay
 
 //@Preview
 @Composable
+
 fun TrackScreen(
     songs: List<Song>,
     initialIndex: Int,
@@ -44,10 +46,10 @@ fun TrackScreen(
 ) {
     val context = LocalContext.current
     val contentResolver = context.contentResolver
-
+    val viewModel = hiltViewModel<SongViewModel>()
     var currentIndex by remember { mutableStateOf(initialIndex) }
     val currentSong = songs.getOrNull(currentIndex) ?: return
-
+    viewModel.updateLastPlayed(currentSong.songId)
     var isPlaying by remember { mutableStateOf(false) }
     var playbackProgress by remember { mutableStateOf(0f) }
     var duration by remember { mutableStateOf(1f) }
@@ -169,12 +171,19 @@ fun TrackScreen(
             )
 
             Spacer(modifier = Modifier.height(8.dp))
+            val songState by viewModel.userSongList.collectAsState()
+            val song = songState.find { it.songId == currentSong.songId }
+            val isLiked = song?.isLiked ?: false
+            IconButton(onClick = {
+                viewModel.toggleLike(currentSong.songId)
+            }) {
+                Icon(
+                    imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = if (isLiked) "Unlike" else "Like",
+                    tint = if (isLiked) Color.Red else Color.White
+                )
+            }
 
-            Icon(
-                imageVector = Icons.Default.FavoriteBorder,
-                contentDescription = "Favorite",
-                tint = Color.White
-            )
 
             Spacer(modifier = Modifier.height(16.dp))
 

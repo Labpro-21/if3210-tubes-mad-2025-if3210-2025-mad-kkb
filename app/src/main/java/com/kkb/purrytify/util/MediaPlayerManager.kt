@@ -4,6 +4,7 @@ import android.content.ContentResolver
 import android.media.MediaPlayer
 import android.net.Uri
 import android.util.Log
+import com.kkb.purrytify.UserSong
 import com.kkb.purrytify.data.model.Song
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,19 +14,19 @@ object MediaPlayerManager {
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying
 
-    private val _currentSong = MutableStateFlow<Song?>(null)
-    val currentSong: StateFlow<Song?> = _currentSong
+    private val _currentSong = MutableStateFlow<UserSong?>(null)
+    val currentSong: StateFlow<UserSong?> = _currentSong
 
     private var currentPosition: Int = 0
 
     fun play(
-        song: Song,
+        song: UserSong,
         uri: Uri,
         contentResolver: ContentResolver,
         onError: (Exception) -> Unit = {}
     ) {
         try {
-            val isResuming = _currentSong.value?.id == song.id && currentPosition > 0
+            val isResuming = _currentSong.value?.songId == song.songId && currentPosition > 0
 
             if (isResuming) {
                 mediaPlayer?.let {

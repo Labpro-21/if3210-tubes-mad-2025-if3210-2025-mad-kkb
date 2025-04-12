@@ -7,10 +7,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.kkb.purrytify.R
 import com.kkb.purrytify.data.model.Song
 import com.bumptech.glide.Glide
+import com.kkb.purrytify.UserSong
 
 class SongAdapter(
-    private var songs: List<Song>,
-    private val onClick: (Song) -> Unit
+    private var songs: List<UserSong>,
+    private val onClick: (UserSong) -> Unit
 ) : RecyclerView.Adapter<SongAdapter.SongViewHolder>() {
 
     inner class SongViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -18,7 +19,7 @@ class SongAdapter(
         private val title: TextView = view.findViewById(R.id.text_title)
         private val artist: TextView = view.findViewById(R.id.text_artist)
 
-        fun bind(song: Song) {
+        fun bind(song: UserSong) {
             title.text = song.title
             artist.text = song.artist
 
@@ -44,7 +45,7 @@ class SongAdapter(
         holder.bind(songs[position])
     }
 
-    fun updateList(newList: List<Song>) {
+    fun updateList(newList: List<UserSong>) {
         songs = newList
         notifyDataSetChanged()
     }
