@@ -1,5 +1,6 @@
 package com.kkb.purrytify
 
+import android.content.Intent
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -185,15 +186,30 @@ fun UploadPhotoBox(
 fun UploadFileBox(
     selectedFileName: String? = null,
     onFileSelected: (Uri?) -> Unit = {}) {
+    val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri -> onFileSelected(uri) }
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            // ✅ Grant temporary (persistable) permission to read the URI
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (e: SecurityException) {
+                e.printStackTrace()
+            }
+        }
+
+        onFileSelected(uri)
+    }
 
     Box(
         modifier = Modifier
             .size(100.dp)
             .border(BorderStroke(1.dp, Color.Gray), shape = RoundedCornerShape(8.dp))
-            .clickable { launcher.launch("audio/*") },
+            .clickable { launcher.launch(arrayOf("audio/*")) },
         contentAlignment = Alignment.Center
     ) {
         Text(selectedFileName ?: "Upload File", color = Color.White)

@@ -1,5 +1,8 @@
 package com.kkb.purrytify
 
+import android.media.MediaPlayer
+import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -9,22 +12,32 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
 import com.kkb.purrytify.data.model.Song
+import com.kkb.purrytify.util.MediaPlayerManager
 
 //@Preview
 @Composable
 fun TrackScreen(song: Song) {
+    val context = LocalContext.current
+    val contentResolver = context.contentResolver
+    var isPlayingState by remember { mutableStateOf(MediaPlayerManager.isPlaying) }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -64,8 +77,11 @@ fun TrackScreen(song: Song) {
             Spacer(modifier = Modifier.height(32.dp))
 
             // Album Art
+            val painter = rememberAsyncImagePainter(
+                model = song.coverPath ?: R.drawable.album_placeholder
+            )
             Image(
-                painter = painterResource(id = R.drawable.ic_music), // Replace with your actual drawable
+                painter = painter, // Replace with your actual drawable
                 contentDescription = "Album Art",
                 modifier = Modifier
                     .size(280.dp)
@@ -135,13 +151,25 @@ fun TrackScreen(song: Song) {
                     modifier = Modifier.size(32.dp)
                 )
                 IconButton(
-                    onClick = { /* TODO: handle play/pause */ },
+                    onClick = {
+                        val uri = Uri.parse(song.filePath)
+                        if (!MediaPlayerManager.isPlaying) {
+                            MediaPlayerManager.play(
+                                uri = uri,
+                                contentResolver = contentResolver,
+                                onError = { e -> Log.e("TrackScreen", "Error: ${e.message}") }
+                            )
+                        } else {
+                            MediaPlayerManager.pause()
+                        }
+                        isPlayingState = MediaPlayerManager.isPlaying
+                              },
                     modifier = Modifier
                         .size(64.dp)
                         .background(Color.White, shape = CircleShape)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.PlayArrow,
+                        imageVector = if (isPlayingState) Icons.Default.Pause else Icons.Default.PlayArrow,
                         contentDescription = "Play",
                         tint = Color.Black,
                         modifier = Modifier.size(32.dp)
