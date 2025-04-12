@@ -41,28 +41,22 @@ class SongViewModel @Inject constructor(
 
 
     init {
-        refreshSongs()
+        setupUserSongListMerger() // Set up the Combine flow once
+        refreshSongs() // Initial data load
     }
 
-    private fun refreshSongs() {
-
+    private fun setupUserSongListMerger() {
         viewModelScope.launch {
-            _songs.value = songDao.getAllSongs()
-            val user_id = TokenStorage.getUserId(context)?.toIntOrNull()
-            if (user_id != null){
-                _userSongs.value = userSongDao.getUserSongsByUserId(user_id)
-            }
             combine(_songs, _userSongs) { songs, userSongs ->
                 userSongs.mapNotNull { userSong ->
-                    val song = songs.find { it.id == userSong.songId }
-                    song?.let {
+                    songs.find { it.id == userSong.songId }?.let { song ->
                         UserSong(
                             userId = userSong.userId,
                             songId = userSong.songId,
-                            title = it.title,
-                            artist = it.artist,
-                            filePath = it.filePath,
-                            coverPath = it.coverPath,
+                            title = song.title,
+                            artist = song.artist,
+                            filePath = song.filePath,
+                            coverPath = song.coverPath,
                             isLiked = userSong.isLiked,
                             createdAt = userSong.createdAt,
                             lastPlayed = userSong.lastPlayed
@@ -71,9 +65,17 @@ class SongViewModel @Inject constructor(
                 }
             }.collect { mergedList ->
                 _userSongList.value = mergedList
-                Log.d("usersong","${_userSongList.value}")
             }
-            Log.d("usersong","${_userSongList.value}")
+        }
+    }
+
+    private fun refreshSongs() {
+        viewModelScope.launch {
+            // Update both StateFlows
+            _songs.value = songDao.getAllSongs()
+            TokenStorage.getUserId(context)?.toIntOrNull()?.let { userId ->
+                _userSongs.value = userSongDao.getUserSongsByUserId(userId)
+            }
         }
     }
 
@@ -95,6 +97,23 @@ class SongViewModel @Inject constructor(
                 Log.d("usersongs","${_userSongs.value}")
             } else {
                 Log.e("SongViewModel", "Failed to insert UserSongs: userId is null or invalid")
+            }
+            refreshSongs()
+        }
+    }
+
+    fun updateLastPlayed(songId: Int) {
+        viewModelScope.launch {
+            val userId = TokenStorage.getUserId(context)?.toIntOrNull()
+            if (userId != null) {
+                userSongDao.updateLastPlayed(
+                    userId = userId,
+                    songId = songId,
+                    lastPlayed = LocalDateTime.now()
+                )
+                // update UI state
+            } else {
+                Log.e("SongViewModel", "updateLastPlayed failed: userId is null")
             }
             refreshSongs()
         }

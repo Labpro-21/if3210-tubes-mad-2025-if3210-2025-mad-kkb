@@ -40,7 +40,10 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
     val context = LocalContext.current
     val currentSong by MediaPlayerManager.currentSong.collectAsState()
     val isPlaying by MediaPlayerManager.isPlaying.collectAsState()
-
+    val newSongs = songs.sortedByDescending { it.createdAt }
+    val recentlyPlayedSongs = songs
+        .filter { it.lastPlayed != null }
+        .sortedByDescending { it.lastPlayed }
     Scaffold(
         containerColor = Color.Black,
         bottomBar = {
@@ -106,7 +109,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                 }
             }else{
                 LazyRow {
-                    items(songs) { song ->
+                    items(newSongs) { song ->
                         SongViewBig(song = song, onClick = {
                             navController.navigate("track/${song.songId}")
                         })
@@ -118,7 +121,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                 Text("Recently played", color = Color.White, fontSize = 20.sp)
 
                 LazyColumn {
-                    items(songs) { song ->
+                    items(recentlyPlayedSongs) { song ->
                         SongView(song = song, onClick = {
                             navController.navigate("track/${song.songId}")
                         })

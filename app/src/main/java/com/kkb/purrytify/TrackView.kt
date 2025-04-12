@@ -46,7 +46,7 @@ fun TrackScreen(songs: List<UserSong>, initialIndex: Int) {
     val viewModel = hiltViewModel<SongViewModel>()
     var currentIndex by remember { mutableStateOf(initialIndex) }
     val currentSong = songs.getOrNull(currentIndex) ?: return
-
+    viewModel.updateLastPlayed(currentSong.songId)
     var isPlaying by remember { mutableStateOf(false) }
     var playbackProgress by remember { mutableStateOf(0f) }
     var duration by remember { mutableStateOf(1f) }
