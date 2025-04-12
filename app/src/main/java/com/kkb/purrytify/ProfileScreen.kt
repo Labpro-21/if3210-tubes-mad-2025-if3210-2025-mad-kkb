@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import androidx.navigation.NavController
@@ -36,6 +35,7 @@ fun ProfileScreen(    navController: NavController = rememberNavController(), //
 ) {
     var profile by remember { mutableStateOf<ProfileResponse?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
 
     // ✅ LaunchedEffect = coroutine-safe zone untuk suspend function, semacam async kayaknya
     LaunchedEffect(Unit) {
@@ -59,7 +59,19 @@ fun ProfileScreen(    navController: NavController = rememberNavController(), //
     Scaffold(
         containerColor = Color.Black,
         bottomBar = {
-            BottomNavigationBar(navController = navController, currentRoute = currentRoute)
+            BottomNavigationBar(
+                navController = navController,
+                currentRoute = currentRoute,
+                onLogout = {
+                    TokenStorage.clearToken(context)
+                    navController.navigate("login") {
+                        popUpTo("home") {
+                            inclusive = true
+                        }
+                    }
+                },
+                context = context
+            )
         }
     ) { innerPadding ->
         Column(
@@ -113,7 +125,7 @@ fun ProfileScreen(    navController: NavController = rememberNavController(), //
             )
 
             Text(
-                text = "Indonesia",
+                text = profile?.location ?: "Loading...",
                 color = Color.Gray,
                 fontSize = 14.sp,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -143,24 +155,6 @@ fun ProfileScreen(    navController: NavController = rememberNavController(), //
             }
 
             Spacer(modifier = Modifier.height(40.dp))
-
-            // Placeholder content
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(80.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Surface(
-                    shape = CircleShape,
-                    color = Color(0xFFFFD700),
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text("B", color = Color.Black, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
         }
     }
 }

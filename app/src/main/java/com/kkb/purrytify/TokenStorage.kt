@@ -44,7 +44,13 @@ object TokenStorage {
 //    }
 
     fun clearToken(context: Context) {
+        Log.d("TokenStorage", "clearToken called")
+        Log.d("TokenStorage", "accessToken: ${getAccessToken(context)}")
+        Log.d("TokenStorage", "refreshToken: ${getRefreshToken(context)}")
         getPrefs(context).edit().clear().apply()
+        Log.d("TokenStorage", "Token cleared")
+        Log.d("TokenStorage", "accessToken: ${getAccessToken(context)}")
+        Log.d("TokenStorage", "refreshToken: ${getRefreshToken(context)}")
     }
 
     fun getAccessToken(context: Context): String? {

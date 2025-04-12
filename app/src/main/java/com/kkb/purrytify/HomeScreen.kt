@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
@@ -34,10 +35,23 @@ fun HomeScreenPreview() {
 fun HomeScreen(navController: NavController, currentRoute: String) {
     val viewModel = hiltViewModel<SongViewModel>()
     val songs by viewModel.songs.collectAsState()
+    val context = LocalContext.current
     Scaffold(
         containerColor = Color.Black,
         bottomBar = {
-            BottomNavigationBar(navController = navController, currentRoute = currentRoute)
+            BottomNavigationBar(
+                navController = navController,
+                currentRoute = currentRoute,
+                onLogout = {
+                    TokenStorage.clearToken(context)
+                    navController.navigate("login"){
+                        popUpTo("home"){
+                            inclusive = true
+                        }
+                    }
+                },
+                context = context
+            )
         }
     ) { innerPadding ->
         Column(
