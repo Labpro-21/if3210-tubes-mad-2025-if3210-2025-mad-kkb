@@ -2,6 +2,7 @@ package com.kkb.purrytify
 
 import SongAdapter
 import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,6 +46,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.kkb.purrytify.data.model.Song
 import com.kkb.purrytify.util.MediaPlayerManager
+import com.kkb.purrytify.viewmodel.ChartViewModel
 import com.kkb.purrytify.viewmodel.LikeViewModel
 import com.kkb.purrytify.viewmodel.SongViewModel
 import kotlinx.coroutines.launch
@@ -54,6 +56,7 @@ import java.time.LocalDateTime
 @Composable
 fun LibraryScreen(navController: NavController, currentRoute: String){
     val viewModel = hiltViewModel<SongViewModel>()
+    val chartViewModel: ChartViewModel = hiltViewModel()
     val likeviewModel = hiltViewModel<LikeViewModel>()
     val sheetState = rememberModalBottomSheetState( skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
@@ -102,7 +105,21 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
                         },
                         onNext = { /* Implement next song logic */ },
                         onClick = {
-                            navController.navigate("track/${currentSong!!.songId}")
+                            val song = currentSong!!
+                            if (song.userId == 0) {
+                                // Chart song: find index in chart list and navigate to chart track
+
+                                val chartSongs = chartViewModel.chartSongs.value
+                                if (chartSongs.isEmpty()) {
+                                    chartViewModel.fetchGlobalChart()
+                                }
+                                val index = chartSongs.indexOfFirst { it.id == song.songId }
+                                if (index != -1) {
+                                    navController.navigate("track_chart/$index")
+                                }
+                            } else {
+                                navController.navigate("track/${song.songId}")
+                            }
                         }
                     )
                 }

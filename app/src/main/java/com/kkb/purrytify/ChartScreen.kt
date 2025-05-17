@@ -65,7 +65,8 @@ fun ChartScreen(
                             if (chartSongs.isNotEmpty()) {
                                 // Pass all song ids as comma-separated string
                                 val ids = chartSongs.joinToString(",") { it.id.toString() }
-                                navController.navigate("track_chart/$ids/0")
+                                Log.d("ids",ids)
+                                navController.navigate("track_chart/0")
                             }
                         },
                         modifier = Modifier

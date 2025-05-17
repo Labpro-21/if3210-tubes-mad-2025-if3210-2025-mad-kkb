@@ -25,6 +25,7 @@ import coil.compose.AsyncImage
 import com.kkb.purrytify.ui.components.SongView
 import com.kkb.purrytify.ui.components.SongViewBig
 import com.kkb.purrytify.util.MediaPlayerManager
+import com.kkb.purrytify.viewmodel.ChartViewModel
 import com.kkb.purrytify.viewmodel.SongViewModel
 @Preview(showBackground = true, backgroundColor = 0xFF000000)
 @Composable
@@ -38,6 +39,7 @@ fun HomeScreenPreview() {
 @Composable
 fun HomeScreen(navController: NavController, currentRoute: String) {
     val viewModel = hiltViewModel<SongViewModel>()
+    val chartViewModel: ChartViewModel = hiltViewModel()
     val songs by viewModel.userSongList.collectAsState()
     val context = LocalContext.current
     val currentSong by MediaPlayerManager.currentSong.collectAsState()
@@ -66,7 +68,21 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                         },
                         onNext = { /* Implement next song logic */ },
                         onClick = {
-                            navController.navigate("track/${currentSong!!.songId}")
+                            val song = currentSong!!
+                            if (song.userId == 0) {
+                                // Chart song: find index in chart list and navigate to chart track
+
+                                val chartSongs = chartViewModel.chartSongs.value
+                                if (chartSongs.isEmpty()) {
+                                    chartViewModel.fetchGlobalChart()
+                                }
+                                val index = chartSongs.indexOfFirst { it.id == song.songId }
+                                if (index != -1) {
+                                    navController.navigate("track_chart/$index")
+                                }
+                            } else {
+                                navController.navigate("track/${song.songId}")
+                            }
                         }
                     )
                 }

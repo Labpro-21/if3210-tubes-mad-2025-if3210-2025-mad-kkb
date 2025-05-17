@@ -22,9 +22,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.Image
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -32,7 +37,11 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.kkb.purrytify.data.model.Song
 import com.kkb.purrytify.R
+import com.kkb.purrytify.util.MediaPlayerManager
 import com.kkb.purrytify.viewmodel.SongViewModel
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 @Composable
 fun MiniPlayer(
@@ -43,6 +52,22 @@ fun MiniPlayer(
     onClick: () -> Unit
 ) {
     val viewModel = hiltViewModel<SongViewModel>()
+    var playbackProgress by remember { mutableStateOf(0f) }
+    var duration by remember { mutableStateOf(1f) }
+
+    // Update progress while playing
+    LaunchedEffect(isPlaying) {
+        while (isPlaying) {
+            val player = MediaPlayerManager.getPlayer()
+            if (player != null && player.isPlaying) {
+                val current = player.currentPosition
+                val total = player.duration.takeIf { it > 0 } ?: 1
+                playbackProgress = current.toFloat() / total
+                duration = total.toFloat()
+            }
+            delay(500)
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -115,6 +140,21 @@ fun MiniPlayer(
                     tint = Color.White
                 )
             }
+            
         }
+    }
+    // Progress Bar as a line
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(3.dp)
+            .background(Color.Gray)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(playbackProgress)
+                .background(Color.White)
+        )
     }
 }

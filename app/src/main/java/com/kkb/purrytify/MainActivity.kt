@@ -95,13 +95,11 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable(
-                        "track_chart/{ids}/{index}",
+                        "track_chart/{index}",
                         arguments = listOf(
-                            navArgument("ids") { type = NavType.StringType },
                             navArgument("index") { type = NavType.IntType }
                         )
                     ) { backStackEntry ->
-                        val idsArg = backStackEntry.arguments?.getString("ids") ?: ""
                         val index = backStackEntry.arguments?.getInt("index") ?: 0
                         val chartViewModel: ChartViewModel = hiltViewModel()
                         val chartSongs by chartViewModel.chartSongs.collectAsState()
@@ -113,7 +111,7 @@ class MainActivity : ComponentActivity() {
                                 chartViewModel.fetchGlobalChart()
                             }
                         }
-
+                        val idsArg = chartSongs.joinToString(",") { it.id.toString() }
                         val ids = idsArg.split(",").mapNotNull { it.toIntOrNull() }
                         val selectedSongs = chartSongs.filter { it.id in ids }
                         val userSongs = selectedSongs.map {
@@ -129,6 +127,8 @@ class MainActivity : ComponentActivity() {
                                 lastPlayed = null
                             )
                         }
+                        Log.d("charttrack", userSongs.toString())
+                        Log.d("charttrackidx", index.toString())
                         if (userSongs.isNotEmpty()) {
                             TrackScreen(
                                 songs = userSongs,
