@@ -3,7 +3,10 @@ package com.kkb.purrytify.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kkb.purrytify.data.model.ChartSong
+import com.kkb.purrytify.data.model.Song
+import com.kkb.purrytify.data.model.UserSongs
 import com.kkb.purrytify.data.remote.ApiService
+import com.kkb.purrytify.data.repository.SongRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -12,11 +15,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.LocalDateTime
 import javax.inject.Inject
 
 @HiltViewModel
 class ChartViewModel @Inject constructor(
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    private val songRepository: SongRepository
 ) : ViewModel() {
 
     private val _chartSongs = MutableStateFlow<List<ChartSong>>(emptyList())
@@ -54,6 +59,32 @@ class ChartViewModel @Inject constructor(
                     _error.value = e.localizedMessage ?: "Unknown error"
                     _isLoading.value = false
                 }
+            }
+        }
+    }
+
+    fun downloadChartToLocal(userId: Int) {
+        val chartSongs = _chartSongs.value
+        if (chartSongs.isEmpty()) return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            chartSongs.forEach { chartSong ->
+                // Map ChartSong to Song and UserSongs
+                val song = Song(
+                    id = chartSong.id,
+                    title = chartSong.title,
+                    artist = chartSong.artist,
+                    filePath = chartSong.url,
+                    coverPath = chartSong.artwork
+                )
+                val userSong = UserSongs(
+                    userId = userId,
+                    songId = chartSong.id,
+                    isLiked = false,
+                    createdAt = LocalDateTime.now(),
+                    lastPlayed = null
+                )
+                songRepository.insertSongWithUserSong(song, userSong)
             }
         }
     }
