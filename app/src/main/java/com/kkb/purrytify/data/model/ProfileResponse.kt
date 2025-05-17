@@ -1,4 +1,4 @@
-package com.kkb.purrytify
+package com.kkb.purrytify.data.model
 
 data class ProfileResponse(
     val id: Int,

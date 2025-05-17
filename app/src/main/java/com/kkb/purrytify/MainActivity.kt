@@ -19,15 +19,21 @@ import com.kkb.purrytify.TokenStorage.refreshAccessTokenIfNeeded
 import com.kkb.purrytify.viewmodel.SongViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.compose.foundation.layout.Column
+import com.kkb.purrytify.data.remote.ApiService
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var apiService: ApiService
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val context = this
         lifecycleScope.launch {
-            val loggedIn = refreshAccessTokenIfNeeded(context)
+            val loggedIn = TokenStorage.refreshAccessTokenIfNeeded(context, apiService)
             Log.d("TokenStorage", "loggedIn: $loggedIn")
             val initialRoute = if (loggedIn) "home" else "login"
 
@@ -61,6 +67,30 @@ class MainActivity : ComponentActivity() {
                     composable(
                         "track/{songId}",
                         arguments = listOf(navArgument("songId") { type = NavType.IntType })
+                    ) { backStackEntry ->
+                        val songId = backStackEntry.arguments?.getInt("songId")
+                        val viewModel: SongViewModel = hiltViewModel()
+                        val selectedSong = viewModel.getSongById(songId) // You implement this
+                        val songs by viewModel.userSongList.collectAsState()
+                        selectedSong?.let { song ->
+                            val index = songs.indexOfFirst { it.songId == song.id }
+                            Log.d("idsong", "id: $index")
+                            Log.d("songids", "$songs")
+                            if (index != -1) {
+                                TrackScreen(
+                                    songs = songs,
+                                    initialIndex = index,
+                                    navController = navController,
+                                    viewModel = viewModel
+                                )
+                            } else {
+                                Log.e("idsong", "Song not found in the list")
+                            }
+                        }
+                    }
+
+                    composable(
+                        "charts/global",
                     ) { backStackEntry ->
                         val songId = backStackEntry.arguments?.getInt("songId")
                         val viewModel: SongViewModel = hiltViewModel()

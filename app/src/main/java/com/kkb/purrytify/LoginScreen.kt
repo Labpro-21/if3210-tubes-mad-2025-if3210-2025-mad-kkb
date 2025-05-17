@@ -20,9 +20,9 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.kkb.purrytify.viewmodel.LoginViewModel
 import kotlinx.coroutines.launch
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
 @Preview
 @Composable
@@ -37,7 +37,8 @@ fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    val baseUrl = context.getString(R.string.base_url)
+    val viewModel: LoginViewModel = hiltViewModel()
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         snackbarHost = {
@@ -146,40 +147,46 @@ fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
 
                 Button(
                     onClick = {
-                        coroutineScope.launch {
-                            try {
-                                val retrofit = Retrofit.Builder()
-                                    .baseUrl(baseUrl)
-                                    .addConverterFactory(GsonConverterFactory.create())
-                                    .build()
-
-                                val service = retrofit.create(LoginApiService::class.java)
-                                val response = service.login(LoginRequest(email, password))
-
-                                if (response.isSuccessful && response.body() != null) {
-                                    val accessToken = response.body()!!.accessToken
-                                    val refreshToken = response.body()!!.refreshToken
-                                    val user_id = email.substringBefore("@").takeLast(3)
-                                    TokenStorage.saveToken(context, accessToken, refreshToken)
-                                    TokenStorage.saveUserId(context, user_id)
-                                    snackbarHostState.showSnackbar("Login berhasil 🎉")
-                                    onLoginSuccess()
-                                } else {
-                                    snackbarHostState.showSnackbar("Login gagal. Email atau password salah.")
-                                }
-                            } catch (e: Exception) {
-                                val errorMessage = e.message ?: "Terjadi kesalahan tidak diketahui"
-                                snackbarHostState.showSnackbar("Error: $errorMessage")
-                            }
-                        }
+                        viewModel.login(email, password)
                     },
+                    enabled = !uiState.isLoading,
                     colors = ButtonDefaults.buttonColors(containerColor = loginButtonColor),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
                     shape = RoundedCornerShape(50)
                 ) {
-                    Text("Log In", color = Color.White)
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Log In", color = Color.White)
+                    }
+                }
+
+                // Show error message
+                if (uiState.error != null) {
+                    LaunchedEffect(uiState.error) {
+                        snackbarHostState.showSnackbar(uiState.error ?: "")
+                        viewModel.clearError()
+                    }
+                }
+
+                // On success, save token and call onLoginSuccess
+                val loginResponse = uiState.loginResponse
+                if (uiState.success && loginResponse != null) {
+                    LaunchedEffect(loginResponse) {
+                        val accessToken = loginResponse.accessToken
+                        val refreshToken = loginResponse.refreshToken
+                        val user_id = email.substringBefore("@").takeLast(3)
+                        TokenStorage.saveToken(context, accessToken, refreshToken)
+                        TokenStorage.saveUserId(context, user_id)
+                        snackbarHostState.showSnackbar("Login berhasil 🎉")
+                        onLoginSuccess()
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(80.dp))

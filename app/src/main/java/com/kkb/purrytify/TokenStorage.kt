@@ -5,6 +5,7 @@ import android.media.session.MediaSession.Token
 import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.kkb.purrytify.data.remote.ApiService
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -72,7 +73,7 @@ object TokenStorage {
         return getPrefs(context).getString(USER_ID, null)
     }
 
-    suspend fun refreshAccessTokenIfNeeded(context: Context): Boolean {
+    suspend fun refreshAccessTokenIfNeeded(context: Context,apiService: ApiService): Boolean {
         val accessToken = getAccessToken(context)
         //cetak accessToken
         Log.d("TokenStorage", "accessToken: $accessToken")
@@ -94,29 +95,21 @@ object TokenStorage {
         if (refreshToken == null) return false // Tidak bisa refresh
 
         return try {
-            val retrofit = Retrofit.Builder()
-                .baseUrl(context.getString(R.string.base_url)) // ← gunakan context untuk ambil baseUrl
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
-
-            val service = retrofit.create(LoginApiService::class.java)
-            val response = service.refreshToken(LoginApiService.RefreshTokenRequest(refreshToken))
+            val response = apiService.refreshToken(ApiService.RefreshTokenRequest(refreshToken))
 
             if (response.isSuccessful && response.body() != null) {
                 val newAccessToken = response.body()!!.accessToken
                 val newRefreshToken = response.body()!!.refreshToken
                 saveToken(context, newAccessToken, newRefreshToken)
-                val existingUserId = getUserId(context)
-                if (existingUserId != null) {
-                    saveUserId(context, existingUserId)
-                }
+                getUserId(context)?.let { saveUserId(context, it) }
                 Log.d("TokenStorage", "Token berhasil di-refresh")
                 true
             } else {
-                false // Refresh gagal
+                Log.e("TokenStorage", "Refresh gagal: ${response.errorBody()?.string()}")
+                false
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("TokenStorage", "Exception saat refresh token", e)
             false
         }
     }

@@ -1,67 +1,50 @@
 package com.kkb.purrytify
 
 import android.content.Context
-import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.*
-import androidx.navigation.NavController
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.compose.rememberNavController
-import com.kkb.purrytify.data.remote.RetrofitInstance
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.*
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.kkb.purrytify.viewmodel.ProfileViewModel
 import com.kkb.purrytify.viewmodel.SongViewModel
 
-
 @Composable
-fun ProfileScreen(    navController: NavController = rememberNavController(), // aman untuk preview
-                      currentRoute: String = "profile",                         // default route
-                      context: Context = LocalContext.current
+fun ProfileScreen(
+    navController: NavController = rememberNavController(),
+    currentRoute: String = "profile",
+    context: Context = LocalContext.current
 ) {
-    var profile by remember { mutableStateOf<ProfileResponse?>(null) }
-    var error by remember { mutableStateOf<String?>(null) }
-    val context = LocalContext.current
-    val viewModel = hiltViewModel<SongViewModel>()
-    val totalSongs by viewModel.totalSongsCount.collectAsState()
-    val likedSongs by viewModel.likedSongsCount.collectAsState()
-    val listenedSongs by viewModel.listenedSongsCount.collectAsState()
+    val profileViewModel: ProfileViewModel = hiltViewModel()
+    val songViewModel: SongViewModel = hiltViewModel()
+    val uiState by profileViewModel.uiState.collectAsState()
+    val totalSongs by songViewModel.totalSongsCount.collectAsState()
+    val likedSongs by songViewModel.likedSongsCount.collectAsState()
+    val listenedSongs by songViewModel.listenedSongsCount.collectAsState()
 
-    // ✅ LaunchedEffect = coroutine-safe zone untuk suspend function, semacam async kayaknya
+    val ctx = LocalContext.current
+
+    // Fetch profile on first composition
     LaunchedEffect(Unit) {
-        val token = TokenStorage.getAccessToken(context)
+        val token = TokenStorage.getAccessToken(ctx)
         if (token != null) {
-            try {
-                val result = RetrofitInstance.api.getProfile("Bearer $token")
-                profile = result
-                Log.d("ProfileScreen", "Profile: $profile")
-            } catch (e: Exception) {
-                error = "Gagal mengambil data profil"
-                Log.e("ProfileScreen", "Error: ${e.message}")
-            }
-        } else {
-            error = "Token tidak tersedia"
+            profileViewModel.fetchProfile(token)
         }
     }
-
-
 
     Scaffold(
         containerColor = Color.Black,
@@ -85,13 +68,12 @@ fun ProfileScreen(    navController: NavController = rememberNavController(), //
                 )
                 .padding(top = 32.dp, bottom = 16.dp)
         ) {
-
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp),
                 contentAlignment = Alignment.Center
-            ){
+            ) {
                 // Avatar
                 Icon(
                     imageVector = Icons.Filled.Person,
@@ -99,7 +81,6 @@ fun ProfileScreen(    navController: NavController = rememberNavController(), //
                     modifier = Modifier.size(96.dp),
                     tint = Color.White
                 )
-
                 Icon(
                     imageVector = Icons.Filled.Edit,
                     contentDescription = "Edit",
@@ -112,23 +93,37 @@ fun ProfileScreen(    navController: NavController = rememberNavController(), //
                 )
             }
 
-
-
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = profile?.username ?: "Loading...",
-                color = Color.White,
-                fontSize = 20.sp,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
-
-            Text(
-                text = profile?.location ?: "Loading...",
-                color = Color.Gray,
-                fontSize = 14.sp,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
+            when {
+                uiState.isLoading -> {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                }
+                uiState.error != null -> {
+                    Text(
+                        text = uiState.error ?: "Unknown error",
+                        color = Color.Red,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                }
+                else -> {
+                    Text(
+                        text = uiState.profile?.username ?: "Loading...",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                    Text(
+                        text = uiState.profile?.location ?: "Loading...",
+                        color = Color.Gray,
+                        fontSize = 14.sp,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -136,8 +131,7 @@ fun ProfileScreen(    navController: NavController = rememberNavController(), //
                 onClick = { /* Edit profile */ },
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
+                modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
                 Text("Edit Profile")
             }
