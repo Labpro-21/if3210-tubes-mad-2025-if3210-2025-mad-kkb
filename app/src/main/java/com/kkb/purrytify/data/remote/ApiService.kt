@@ -1,5 +1,6 @@
 package com.kkb.purrytify.data.remote
 
+import com.kkb.purrytify.data.model.ChartResponse
 import com.kkb.purrytify.data.model.LoginRequest
 import com.kkb.purrytify.data.model.LoginResponse
 import com.kkb.purrytify.data.model.ProfileResponse
@@ -17,6 +18,9 @@ interface ApiService {
 
     @POST("api/refresh-token")
     suspend fun refreshToken(@Body body: RefreshTokenRequest): Response<LoginResponse>
+
+    @GET("api/top-songs/global")
+    suspend fun getTopGlobal(): Response<ChartResponse>
 
     data class RefreshTokenRequest(val refreshToken: String)
 }

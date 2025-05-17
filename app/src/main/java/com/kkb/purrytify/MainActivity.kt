@@ -19,7 +19,12 @@ import com.kkb.purrytify.TokenStorage.refreshAccessTokenIfNeeded
 import com.kkb.purrytify.viewmodel.SongViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Modifier
 import com.kkb.purrytify.data.remote.ApiService
+import com.kkb.purrytify.viewmodel.ChartViewModel
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -90,27 +95,54 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable(
-                        "charts/global",
+                        "track_chart/{ids}/{index}",
+                        arguments = listOf(
+                            navArgument("ids") { type = NavType.StringType },
+                            navArgument("index") { type = NavType.IntType }
+                        )
                     ) { backStackEntry ->
-                        val songId = backStackEntry.arguments?.getInt("songId")
-                        val viewModel: SongViewModel = hiltViewModel()
-                        val selectedSong = viewModel.getSongById(songId) // You implement this
-                        val songs by viewModel.userSongList.collectAsState()
-                        selectedSong?.let { song ->
-                            val index = songs.indexOfFirst { it.songId == song.id }
-                            Log.d("idsong", "id: $index")
-                            Log.d("songids", "$songs")
-                            if (index != -1) {
-                                TrackScreen(
-                                    songs = songs,
-                                    initialIndex = index,
-                                    navController = navController,
-                                    viewModel = viewModel
-                                )
-                            } else {
-                                Log.e("idsong", "Song not found in the list")
+                        val idsArg = backStackEntry.arguments?.getString("ids") ?: ""
+                        val index = backStackEntry.arguments?.getInt("index") ?: 0
+                        val chartViewModel: ChartViewModel = hiltViewModel()
+                        val chartSongs by chartViewModel.chartSongs.collectAsState()
+                        val isLoading by chartViewModel.isLoading.collectAsState()
+
+                        // Fetch if empty
+                        LaunchedEffect(chartSongs) {
+                            if (chartSongs.isEmpty()) {
+                                chartViewModel.fetchGlobalChart()
                             }
                         }
+
+                        val ids = idsArg.split(",").mapNotNull { it.toIntOrNull() }
+                        val selectedSongs = chartSongs.filter { it.id in ids }
+                        val userSongs = selectedSongs.map {
+                            UserSong(
+                                userId = 0,
+                                songId = it.id,
+                                title = it.title,
+                                artist = it.artist,
+                                filePath = it.url,
+                                coverPath = it.artwork,
+                                isLiked = false,
+                                createdAt = java.time.LocalDateTime.now(),
+                                lastPlayed = null
+                            )
+                        }
+                        if (userSongs.isNotEmpty()) {
+                            TrackScreen(
+                                songs = userSongs,
+                                initialIndex = index.coerceIn(userSongs.indices),
+                                navController = navController
+                            )
+                        }
+
+                    }
+
+                    composable(
+                        "charts/global",
+                    ) { backStackEntry ->
+                        ChartScreen(navController = navController)
                     }
 
 

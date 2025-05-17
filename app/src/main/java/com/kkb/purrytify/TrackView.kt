@@ -59,11 +59,14 @@ fun TrackScreen(
     val uri = Uri.parse(currentSong.filePath)
 
     LaunchedEffect(currentIndex) {
+        val isRemote = currentSong.filePath.startsWith("http://") || currentSong.filePath.startsWith("https://")
+        val uri = if (isRemote) null else Uri.parse(currentSong.filePath)
         MediaPlayerManager.play(
             song = currentSong,
             uri = uri,
-            contentResolver = contentResolver,
-            onError = { Log.e("TrackScreen", "Playback error: ${it.message}") }
+            contentResolver = if (isRemote) null else contentResolver,
+            isRemote = isRemote,
+            onError = { e -> Log.e("TrackScreen", "Error: ${e.message}") }
         )
         isPlaying = true
     }

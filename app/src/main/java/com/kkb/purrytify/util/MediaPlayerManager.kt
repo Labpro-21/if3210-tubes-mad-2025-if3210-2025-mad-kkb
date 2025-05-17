@@ -21,8 +21,9 @@ object MediaPlayerManager {
 
     fun play(
         song: UserSong,
-        uri: Uri,
-        contentResolver: ContentResolver,
+        uri: Uri?,
+        contentResolver: ContentResolver?,
+        isRemote: Boolean = false,
         onError: (Exception) -> Unit = {}
     ) {
         try {
@@ -42,28 +43,36 @@ object MediaPlayerManager {
                 currentPosition = 0
             }
 
-            val afd = contentResolver.openAssetFileDescriptor(uri, "r")
-            if (afd != null) {
-                afd.use { // Pastikan afd ditutup setelah digunakan
-                    mediaPlayer = MediaPlayer().apply {
-                        setDataSource(it.fileDescriptor)
-
-                        setOnPreparedListener {
-                            start()
-                            _isPlaying.value = true
-                            Log.d("MediaPlayerManager", "Playback started from beginning")
+            mediaPlayer = MediaPlayer().apply {
+                if (isRemote) {
+                    setDataSource(song.filePath)
+                } else if (uri != null && contentResolver != null) {
+                    val afd = contentResolver.openAssetFileDescriptor(uri, "r")
+                    if (afd != null) {
+                        afd.use {
+                            setDataSource(it.fileDescriptor)
                         }
-
-                        setOnCompletionListener {
-                            stop()
-                        }
-
-                        prepareAsync()
+                    } else {
+                        throw Exception("Unable to open file descriptor for local file")
                     }
+                } else {
+                    throw Exception("Invalid parameters for playback")
                 }
 
-                _currentSong.value = song
+                setOnPreparedListener {
+                    start()
+                    _isPlaying.value = true
+                    Log.d("MediaPlayerManager", "Playback started from beginning")
+                }
+
+                setOnCompletionListener {
+                    stop()
+                }
+
+                prepareAsync()
             }
+
+            _currentSong.value = song
         } catch (e: Exception) {
             onError(e)
             Log.e("MediaPlayerManager", "Playback failed: ${e.message}")
