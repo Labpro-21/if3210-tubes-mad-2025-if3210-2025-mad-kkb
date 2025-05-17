@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Check
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,6 +49,8 @@ fun UploadSongBottomSheet(
     var fileUri by remember { mutableStateOf<Uri?>(null) }
     var coverPath by remember { mutableStateOf<String>("null") }
 
+    var photoUploaded by remember { mutableStateOf(false) }
+    var audioUploaded by remember { mutableStateOf(false) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -68,33 +71,31 @@ fun UploadSongBottomSheet(
             BoxWithConstraints {
                 val boxSize = (maxWidth - 100.dp) / 2
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    UploadPhotoBox(){
-                        uri -> coverPath = uri.toString()
+                    UploadPhotoBox(
+                        isUploaded = photoUploaded
+                    ) { uri ->
+                        coverPath = uri.toString()
+                        photoUploaded = uri != null && uri.toString() != "null"
                     }
-                    UploadFileBox { uri ->
+                    UploadFileBox(
+                        isUploaded = audioUploaded
+                    ) { uri ->
                         fileUri = uri
-
+                        audioUploaded = uri != null
                         uri?.let {
                             val retriever = MediaMetadataRetriever()
                             retriever.setDataSource(context, it)
-
                             title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE) ?: "Untitled"
                             artist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST) ?: "Unnamed Artist"
-
-                            // Retrieve embedded album art
                             val coverBytes = retriever.embeddedPicture
                             if (coverBytes != null) {
-                                // Example: Convert to Bitmap if you want to show it
                                 val bitmap = BitmapFactory.decodeByteArray(coverBytes, 0, coverBytes.size)
-
-                                // If you're saving to file, do this:
                                 val coverFile = File(context.cacheDir, "cover_${System.currentTimeMillis()}.jpg")
                                 FileOutputStream(coverFile).use { out ->
                                     bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
                                 }
-
-                                // Save path or uri if needed
                                 coverPath = coverFile.absolutePath
+                                photoUploaded = true
                             }
                             retriever.release()
                         }
@@ -173,8 +174,9 @@ fun UploadSongBottomSheet(
 
 @Composable
 fun UploadPhotoBox(
-    selectedFileName: String? = null,
-    onPhotoSelected: (Uri?) -> Unit = {}) {
+    isUploaded: Boolean = false,
+    onPhotoSelected: (Uri?) -> Unit = {}
+) {
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri -> onPhotoSelected(uri) }
@@ -191,8 +193,6 @@ fun UploadPhotoBox(
             Spacer(modifier = Modifier.height(4.dp))
             Text("Upload Photo", fontSize = 12.sp, color = Color.White)
         }
-
-        // Icon edit di pojok kanan bawah
         Icon(
             imageVector = Icons.Default.Edit,
             contentDescription = "Edit",
@@ -203,13 +203,24 @@ fun UploadPhotoBox(
                 .background(Color.Black, shape = CircleShape)
                 .padding(2.dp)
         )
+        if (isUploaded) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = "Uploaded",
+                tint = Color(0xFF1DB954),
+                modifier = Modifier
+                    .size(28.dp)
+                    .align(Alignment.TopEnd)
+                    .background(Color.Black, shape = CircleShape)
+                    .padding(2.dp)
+            )
+        }
     }
-
 }
 
 @Composable
 fun UploadFileBox(
-    selectedFileName: String? = null,
+    isUploaded: Boolean = false,
     onFileSelected: (Uri?) -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -246,8 +257,6 @@ fun UploadFileBox(
             Spacer(modifier = Modifier.height(4.dp))
             Text("Upload Audio", fontSize = 12.sp, color = Color.White)
         }
-
-        // Icon edit di pojok kanan bawah
         Icon(
             imageVector = Icons.Default.Edit,
             contentDescription = "Edit",
@@ -258,6 +267,18 @@ fun UploadFileBox(
                 .background(Color.Black, shape = CircleShape)
                 .padding(2.dp)
         )
+        if (isUploaded) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = "Uploaded",
+                tint = Color(0xFF1DB954),
+                modifier = Modifier
+                    .size(28.dp)
+                    .align(Alignment.TopEnd)
+                    .background(Color.Black, shape = CircleShape)
+                    .padding(2.dp)
+            )
+        }
     }
 }
 

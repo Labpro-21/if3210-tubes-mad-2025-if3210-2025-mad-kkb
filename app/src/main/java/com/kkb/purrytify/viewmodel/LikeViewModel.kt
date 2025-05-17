@@ -8,6 +8,7 @@ import com.kkb.purrytify.TokenStorage
 import com.kkb.purrytify.data.dao.LikeDao
 import com.kkb.purrytify.data.model.Like
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,37 +23,47 @@ class LikeViewModel @Inject constructor(
     private val _likes = MutableStateFlow<List<Like>>(emptyList())
     val likes: StateFlow<List<Like>> = _likes.asStateFlow()
 
+    private var currentUserId: Int? = null
+
     fun loadLikes(context: Context) {
         val userIdString = TokenStorage.getUserId(context)
-        userIdString?.toIntOrNull()?.let { userId ->
-            viewModelScope.launch {
-                _likes.value = likeDao.getLikesByUserId(userId)
+        val userId = userIdString?.toIntOrNull() ?: return
+        currentUserId = userId
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val likes = likeDao.getLikesByUserId(userId)
+                _likes.value = likes
+            } catch (e: Exception) {
+                Log.e("LikeViewModel", "Failed to load likes: ${e.message}")
             }
         }
     }
 
-    fun likeSong(context: Context, songId: Int) {
-        val userIdString = TokenStorage.getUserId(context)
-        userIdString?.toIntOrNull()?.let { userId ->
-            val like = Like(userId = userId, songId = songId)
-            viewModelScope.launch {
+    fun likeSong(songId: Int) {
+        val userId = currentUserId ?: return
+        val like = Like(userId = userId, songId = songId)
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
                 likeDao.insert(like)
-                loadLikes(context)
+                // Update state in memory for instant UI feedback
+                _likes.value = _likes.value + like
+            } catch (e: Exception) {
+                Log.e("LikeViewModel", "Failed to like song: ${e.message}")
             }
-        } ?: run {
-            Log.e("SongViewModel", "User ID is null or invalid")
         }
     }
 
-    fun unlikeSong(context: Context, songId: Int) {
-        val userIdString = TokenStorage.getUserId(context)
-        userIdString?.toIntOrNull()?.let { userId ->
-            viewModelScope.launch {
-                likeDao.delete(Like(userId, songId))
-                loadLikes(context)
+    fun unlikeSong(songId: Int) {
+        val userId = currentUserId ?: return
+        val like = Like(userId, songId)
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                likeDao.delete(like)
+                // Update state in memory for instant UI feedback
+                _likes.value = _likes.value.filterNot { it.songId == songId }
+            } catch (e: Exception) {
+                Log.e("LikeViewModel", "Failed to unlike song: ${e.message}")
             }
-        } ?: run {
-            Log.e("SongViewModel", "User ID is null or invalid")
         }
     }
 

@@ -2,14 +2,16 @@ package com.kkb.purrytify.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.kkb.purrytify.data.model.ChartResponse
 import com.kkb.purrytify.data.model.ChartSong
 import com.kkb.purrytify.data.remote.ApiService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -26,21 +28,32 @@ class ChartViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    fun fetchGlobalChart() {
+    private var fetchJob: Job? = null
+
+    fun fetchGlobalChart(forceRefresh: Boolean = false) {
+        if (_isLoading.value) return
+        if (_chartSongs.value.isNotEmpty() && !forceRefresh) return
+
         _isLoading.value = true
         _error.value = null
-        viewModelScope.launch {
+
+        fetchJob?.cancel()
+        fetchJob = viewModelScope.launch(Dispatchers.IO) {
             try {
                 val response = apiService.getTopGlobal()
-                if (response.isSuccessful) {
-                    _chartSongs.value = response.body() ?: emptyList()
-                } else {
-                    _error.value = response.message()
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful) {
+                        _chartSongs.value = response.body() ?: emptyList()
+                    } else {
+                        _error.value = response.message()
+                    }
+                    _isLoading.value = false
                 }
             } catch (e: Exception) {
-                _error.value = e.localizedMessage ?: "Unknown error"
-            } finally {
-                _isLoading.value = false
+                withContext(Dispatchers.Main) {
+                    _error.value = e.localizedMessage ?: "Unknown error"
+                    _isLoading.value = false
+                }
             }
         }
     }
