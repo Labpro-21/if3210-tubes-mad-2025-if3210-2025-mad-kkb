@@ -11,7 +11,7 @@ import com.kkb.purrytify.data.model.Like
 import com.kkb.purrytify.data.model.Song
 import com.kkb.purrytify.data.model.UserSongs
 
-@Database(entities = [Song::class, Like::class, UserSongs::class], version = 6, exportSchema = false)
+@Database(entities = [Song::class, Like::class, UserSongs::class], version = 7, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun songDao(): SongDao

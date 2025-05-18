@@ -9,6 +9,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -16,6 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.kkb.purrytify.R
 import com.kkb.purrytify.UserSong
 import com.kkb.purrytify.data.model.Song
@@ -34,13 +37,18 @@ fun SongView(
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
-            model = song.coverPath,
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(song.coverPath)
+                .crossfade(true)
+                .placeholder(R.drawable.album_placeholder)
+                .error(R.drawable.album_placeholder)
+                .size(56) // Limit size for memory efficiency
+                .build(),
             contentDescription = null,
+            contentScale = ContentScale.Crop,
             modifier = Modifier
                 .size(56.dp)
-                .clip(RoundedCornerShape(8.dp)),
-            placeholder = painterResource(R.drawable.album_placeholder),
-            error = painterResource(R.drawable.album_placeholder)
+                .clip(RoundedCornerShape(8.dp))
         )
 
         Spacer(modifier = Modifier.width(12.dp))

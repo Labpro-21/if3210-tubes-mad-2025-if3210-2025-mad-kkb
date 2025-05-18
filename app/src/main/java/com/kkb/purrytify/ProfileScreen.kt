@@ -32,6 +32,7 @@ fun ProfileScreen(
     val profileViewModel: ProfileViewModel = hiltViewModel()
     val songViewModel: SongViewModel = hiltViewModel()
     val uiState by profileViewModel.uiState.collectAsState()
+    val statsState by profileViewModel.statsState.collectAsState()
     val totalSongs by songViewModel.totalSongsCount.collectAsState()
     val likedSongs by songViewModel.likedSongsCount.collectAsState()
     val listenedSongs by songViewModel.listenedSongsCount.collectAsState()
@@ -43,6 +44,12 @@ fun ProfileScreen(
         val token = TokenStorage.getAccessToken(ctx)
         if (token != null) {
             profileViewModel.fetchProfile(token)
+        }
+    }
+
+    LaunchedEffect(uiState.profile) {
+        uiState.profile?.let { profile ->
+            profileViewModel.fetchProfileStats(profile.id)
         }
     }
 
@@ -148,6 +155,120 @@ fun ProfileScreen(
             }
 
             Spacer(modifier = Modifier.height(40.dp))
+
+            Text(
+                text = "Your Sound Capsule",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                modifier = Modifier.padding(16.dp) // Set margin here
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                // Time Listened
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
+                        .padding(16.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = "Time Listened",
+                            color = Color.Gray,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = formatTime(statsState.totalTimeListened),
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Top Artist & Top Song
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Top Artist
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
+                            .padding(16.dp)
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Top Artist",
+                                color = Color.Gray,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = statsState.topArtist?.artist ?: "-",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    // Top Song
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
+                            .padding(16.dp)
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Top Song",
+                                color = Color.Gray,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = statsState.topSong?.title ?: "-",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
+                        .padding(16.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = "Day Streak",
+                            color = Color.Gray,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        val dayStreakSong = statsState.dayStreakSong
+                        Text(
+                            text = "Day Streak: ${dayStreakSong?.dayStreak ?: 0} (${dayStreakSong?.title ?: "-"})",
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -164,4 +285,14 @@ fun ProfileStat(count: String, label: String) {
 @Composable
 fun PreviewProfileScreen() {
     ProfileScreen()
+}
+
+fun formatTime(seconds: Long): String {
+    if (seconds <= 0) return "0 min"
+    val hours = seconds / 3600
+    val minutes = (seconds % 3600) / 60
+    return when {
+        hours > 0 -> "$hours hr ${minutes} min"
+        else -> "$minutes min"
+    }
 }

@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -53,6 +54,7 @@ fun TrackScreen(
     var isPlaying by remember { mutableStateOf(false) }
     var playbackProgress by remember { mutableStateOf(0f) }
     var duration by remember { mutableStateOf(1f) }
+    var lastReportedSeconds by remember { mutableStateOf(0L) }
 
     var showMenu by remember { mutableStateOf(false) }
 
@@ -71,7 +73,8 @@ fun TrackScreen(
         isPlaying = true
     }
 
-    LaunchedEffect(isPlaying) {
+    LaunchedEffect(isPlaying, currentSong.songId) {
+        lastReportedSeconds = 0L
         while (isPlaying) {
             val player = MediaPlayerManager.getPlayer()
             if (player != null && player.isPlaying) {
@@ -79,6 +82,14 @@ fun TrackScreen(
                 val total = player.duration.takeIf { it > 0 } ?: 1
                 playbackProgress = current.toFloat() / total
                 duration = total.toFloat()
+                val seconds = (player.currentPosition / 1000L)
+                if (seconds > lastReportedSeconds) {
+                    val delta = seconds - lastReportedSeconds
+                    if (delta > 0) {
+                        viewModel.updateTimeListened(currentSong.songId, delta)
+                        lastReportedSeconds = seconds
+                    }
+                }
             }
             delay(500)
         }
@@ -147,12 +158,14 @@ fun TrackScreen(
                     .data(currentSong.coverPath)
                     .placeholder(R.drawable.album_placeholder)
                     .error(R.drawable.album_placeholder)
+                    .size(280)
                     .build()
             )
 
             Image(
                 painter = painter,
                 contentDescription = "Album Art",
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(280.dp)
                     .clip(RoundedCornerShape(8.dp))

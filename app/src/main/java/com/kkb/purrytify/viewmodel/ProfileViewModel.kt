@@ -2,6 +2,10 @@ package com.kkb.purrytify.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kkb.purrytify.data.dao.SongPlayDateInfo
+import com.kkb.purrytify.data.dao.TopArtistTimeListened
+import com.kkb.purrytify.data.dao.TopSongTimeListened
+import com.kkb.purrytify.data.dao.UserSongDao
 import com.kkb.purrytify.data.model.ProfileResponse
 import com.kkb.purrytify.data.remote.ApiService
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -10,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
 import javax.inject.Inject
 
 data class ProfileUiState(
@@ -18,13 +23,24 @@ data class ProfileUiState(
     val error: String? = null
 )
 
+data class ProfileStatsUiState(
+    val topSong: TopSongTimeListened? = null,
+    val topArtist: TopArtistTimeListened? = null,
+    val totalTimeListened: Long = 0L,
+    val dayStreakSong: DayStreakSongInfo? = null
+)
+
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    private val userSongDao: UserSongDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState
+
+    private val _statsState = MutableStateFlow(ProfileStatsUiState())
+    val statsState: StateFlow<ProfileStatsUiState> = _statsState
 
     private var cachedProfile: ProfileResponse? = null
 
@@ -53,4 +69,73 @@ class ProfileViewModel @Inject constructor(
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
+
+    fun fetchProfileStats(userId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val topSong = userSongDao.getTopSongByTimeListened(userId)
+            val topArtist = userSongDao.getTopArtistsByTimeListened(userId, 1).firstOrNull()
+            val totalTime = userSongDao.getUserTotalTimeListened(userId) ?: 0L
+            val dayStreakSong = getSongWithHighestDayStreak(userId)
+            withContext(Dispatchers.Main) {
+                _statsState.value = ProfileStatsUiState(
+                    topSong = topSong,
+                    topArtist = topArtist,
+                    totalTimeListened = totalTime,
+                    dayStreakSong = dayStreakSong
+                )
+            }
+        }
+    }
+
+    private fun calculateDayStreak(dates: List<LocalDate>): Int {
+        if (dates.isEmpty()) return 0
+        val sorted = dates.distinct().sortedDescending()
+        var streak = 1
+        var prev = sorted.first()
+        for (date in sorted.drop(1)) {
+            if (prev.minusDays(1) == date) {
+                streak++
+                prev = date
+            } else {
+                break
+            }
+        }
+        // Only count streak if it includes today
+        return if (sorted.first() == LocalDate.now()) streak else 0
+    }
+
+    private suspend fun getSongWithHighestDayStreak(userId: Int): DayStreakSongInfo? {
+        val playInfos = userSongDao.getSongsWithPlayDates(userId)
+        var maxStreak = 0
+        var bestSong: SongPlayDateInfo? = null
+
+        for (info in playInfos) {
+            val lastPlayed = info.lastPlayed?.toLocalDate() ?: continue
+            val streak = calculateDayStreak(listOf(lastPlayed))
+            if (streak > maxStreak) {
+                maxStreak = streak
+                bestSong = info
+            }
+        }
+
+        return bestSong?.let {
+            DayStreakSongInfo(
+                id = it.id,
+                title = it.title,
+                artist = it.artist,
+                filePath = it.filePath,
+                coverPath = it.coverPath,
+                dayStreak = maxStreak
+            )
+        }
+    }
 }
+
+data class DayStreakSongInfo(
+    val id: Int,
+    val title: String,
+    val artist: String,
+    val filePath: String,
+    val coverPath: String?,
+    val dayStreak: Int
+)

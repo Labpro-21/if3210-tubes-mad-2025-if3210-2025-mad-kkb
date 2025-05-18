@@ -190,4 +190,27 @@ class SongViewModel @Inject constructor(
             _userSongs.update { it.filterNot { us -> us.songId == song.songId } }
         }
     }
+
+     fun updateTimeListened(songId: Int, additionalSeconds: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val userId = TokenStorage.getUserId(context)?.toIntOrNull()
+            if (userId != null) {
+                val userSongs = userSongDao.getUserSongsByUserId(userId)
+                val userSong = userSongs.find { it.songId == songId }
+                if (userSong != null) {
+                    val newTimeListened = userSong.timeListened + additionalSeconds
+                    Log.d("time song", newTimeListened.toString())
+                    userSongDao.updateTimeListened(userId, songId, newTimeListened)
+                    // Update state in memory for instant feedback
+                    _userSongs.update { list ->
+                        list.map {
+                            if (it.songId == songId) it.copy(timeListened = newTimeListened) else it
+                        }
+                    }
+                }
+            } else {
+                Log.e("SongViewModel", "updateTimeListened failed: userId is null")
+            }
+        }
+    }
 }

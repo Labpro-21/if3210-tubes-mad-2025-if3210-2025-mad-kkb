@@ -54,9 +54,11 @@ fun MiniPlayer(
     val viewModel = hiltViewModel<SongViewModel>()
     var playbackProgress by remember { mutableStateOf(0f) }
     var duration by remember { mutableStateOf(1f) }
+    var lastReportedSeconds by remember { mutableStateOf(0L) }
 
     // Update progress while playing
-    LaunchedEffect(isPlaying) {
+    LaunchedEffect(isPlaying, currentSong.songId) {
+        lastReportedSeconds = 0L
         while (isPlaying) {
             val player = MediaPlayerManager.getPlayer()
             if (player != null && player.isPlaying) {
@@ -64,6 +66,14 @@ fun MiniPlayer(
                 val total = player.duration.takeIf { it > 0 } ?: 1
                 playbackProgress = current.toFloat() / total
                 duration = total.toFloat()
+                val seconds = (player.currentPosition / 1000L)
+                if (seconds > lastReportedSeconds) {
+                    val delta = seconds - lastReportedSeconds
+                    if (delta > 0) {
+                        viewModel.updateTimeListened(currentSong.songId, delta)
+                        lastReportedSeconds = seconds
+                    }
+                }
             }
             delay(500)
         }

@@ -21,5 +21,6 @@ data class UserSongs(
     val songId: Int,
     val createdAt: LocalDateTime,
     val lastPlayed: LocalDateTime?,
-    val isLiked: Boolean
+    val isLiked: Boolean,
+    val timeListened: Long = 0L
 )
