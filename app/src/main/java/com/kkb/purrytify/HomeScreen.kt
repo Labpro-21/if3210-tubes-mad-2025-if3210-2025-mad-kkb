@@ -1,6 +1,7 @@
 package com.kkb.purrytify
 
 import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -16,6 +17,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
@@ -34,6 +36,11 @@ fun HomeScreenPreview() {
     HomeScreen(navController = navController, currentRoute = "home")
 }
 
+private data class ChartType(
+    val id: String,
+    val title: String,
+    val route: String
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,7 +58,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
     Scaffold(
         containerColor = Color.Black,
         bottomBar = {
-            Column { // Changed from Box to Column
+            Column {
                 if (currentSong != null) {
                     MiniPlayer(
                         currentSong = currentSong!!,
@@ -70,15 +77,16 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                         onClick = {
                             val song = currentSong!!
                             if (song.userId == 0) {
-                                // Chart song: find index in chart list and navigate to chart track
-
                                 val chartSongs = chartViewModel.chartSongs.value
+                                val currentChartType = chartViewModel.currentChartType.value.lowercase()
+                                Log.d("chartype",currentChartType)
                                 if (chartSongs.isEmpty()) {
-                                    chartViewModel.fetchGlobalChart()
+                                    chartViewModel.fetchChart(currentChartType)
                                 }
+                                
                                 val index = chartSongs.indexOfFirst { it.id == song.songId }
                                 if (index != -1) {
-                                    navController.navigate("track_chart/$index")
+                                    navController.navigate("track_chart/${currentChartType}/$index")
                                 }
                             } else {
                                 navController.navigate("track/${song.songId}")
@@ -106,32 +114,52 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Column(
-                modifier = Modifier
-                    .clickable { navController.navigate("charts/global")}
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                    .fillMaxWidth(),
+            val chartTypes = listOf(
+                ChartType("global", "Global Top 50", "charts/global"),
+                ChartType("id", "Indonesia Top 10", "charts/ID"),
+                ChartType("my", "Malaysia Top 10", "charts/MY"),
+                ChartType("us", "United States Top 10", "charts/US"),
+                ChartType("uk", "United Kingdom Top 10", "charts/UK"),
+                ChartType("ch", "Switzerland Top 10", "charts/CH"),
+                ChartType("de", "Germany Top 10", "charts/DE"),
+                ChartType("br", "Brazil Top 10", "charts/BR")
+            )
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp)
             ) {
-                AsyncImage(
-                    model = "",
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(70.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    placeholder = painterResource(R.drawable.album_placeholder),
-                    error = painterResource(R.drawable.album_placeholder)
-                )
+                items(chartTypes) { chart ->
+                    Column(
+                        modifier = Modifier
+                            .width(100.dp)
+                            .clickable { navController.navigate(chart.route) }
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        AsyncImage(
+                            model = "",
+                            contentDescription = chart.title,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            placeholder = painterResource(R.drawable.album_placeholder),
+                            error = painterResource(R.drawable.album_placeholder)
+                        )
 
-                Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = "Top 50",
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                        Text(
+                            text = chart.title,
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
