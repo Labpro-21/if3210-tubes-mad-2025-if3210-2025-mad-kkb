@@ -106,15 +106,16 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
                         onClick = {
                             val song = currentSong!!
                             if (song.userId == 0) {
-                                // Chart song: find index in chart list and navigate to chart track
-
                                 val chartSongs = chartViewModel.chartSongs.value
+                                val currentChartType = chartViewModel.currentChartType.value.lowercase()
+
                                 if (chartSongs.isEmpty()) {
-                                    chartViewModel.fetchGlobalChart()
+                                    chartViewModel.fetchChart(currentChartType)
                                 }
+
                                 val index = chartSongs.indexOfFirst { it.id == song.songId }
                                 if (index != -1) {
-                                    navController.navigate("track_chart/$index")
+                                    navController.navigate("track_chart/${currentChartType}/$index")
                                 }
                             } else {
                                 navController.navigate("track/${song.songId}")
