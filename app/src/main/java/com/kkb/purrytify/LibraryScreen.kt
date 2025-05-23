@@ -2,7 +2,6 @@ package com.kkb.purrytify
 
 import SongAdapter
 import android.net.Uri
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -50,7 +49,6 @@ import com.kkb.purrytify.viewmodel.ChartViewModel
 import com.kkb.purrytify.viewmodel.LikeViewModel
 import com.kkb.purrytify.viewmodel.SongViewModel
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,7 +97,8 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
                                 MediaPlayerManager.play(
                                     song = song,
                                     uri = Uri.parse(song.filePath),
-                                    contentResolver = context.contentResolver
+                                    contentResolver = context.contentResolver,
+                                    context = context
                                 )
                             }
                         },

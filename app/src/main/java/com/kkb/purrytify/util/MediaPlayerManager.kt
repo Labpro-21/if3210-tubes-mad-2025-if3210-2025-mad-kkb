@@ -1,11 +1,11 @@
 package com.kkb.purrytify.util
 
 import android.content.ContentResolver
+import android.content.Context
 import android.media.MediaPlayer
 import android.net.Uri
 import android.util.Log
 import com.kkb.purrytify.UserSong
-import com.kkb.purrytify.data.model.Song
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -18,13 +18,21 @@ object MediaPlayerManager {
     val currentSong: StateFlow<UserSong?> = _currentSong
 
     private var currentPosition: Int = 0
+    private var songList = listOf<UserSong>()
+    private var currentIndex = -1
+
+    fun setPlaylist(songs: List<UserSong>, startIndex: Int) {
+        songList = songs
+        currentIndex = startIndex
+    }
 
     fun play(
         song: UserSong,
         uri: Uri?,
         contentResolver: ContentResolver?,
         isRemote: Boolean = false,
-        onError: (Exception) -> Unit = {}
+        onError: (Exception) -> Unit = {},
+        context: Context
     ) {
         try {
             val isResuming = _currentSong.value?.songId == song.songId && currentPosition > 0
@@ -35,11 +43,13 @@ object MediaPlayerManager {
                         it.start()
                         _isPlaying.value = true
                         Log.d("MediaPlayerManager", "Playback resumed at $currentPosition ms")
+                        // Update notification with playing state
+                        NotificationUtil.showMusicNotification(context, song, true)
                         return
                     }
                 }
             } else {
-                stop()
+                stop(context) // Stop previous playback and cancel notification
                 currentPosition = 0
             }
 
@@ -63,10 +73,17 @@ object MediaPlayerManager {
                     start()
                     _isPlaying.value = true
                     Log.d("MediaPlayerManager", "Playback started from beginning")
+                    // Show notification with playing state
+                    NotificationUtil.showMusicNotification(context, song, true)
                 }
 
                 setOnCompletionListener {
-                    stop()
+                    if (currentIndex >= 0 && currentIndex < songList.size - 1) {
+                        // Auto-play next song
+                        next(context)
+                    } else {
+                        stop(context)
+                    }
                 }
 
                 prepareAsync()
@@ -79,24 +96,84 @@ object MediaPlayerManager {
         }
     }
 
-    fun pause() {
+    fun pause(context: Context? = null) {
         mediaPlayer?.let {
             if (it.isPlaying) {
                 currentPosition = it.currentPosition
                 it.pause()
                 _isPlaying.value = false
                 Log.d("MediaPlayerManager", "Playback paused at $currentPosition ms")
+
+                // Update notification with paused state
+                context?.let { ctx ->
+                    _currentSong.value?.let { song ->
+                        NotificationUtil.updateNotificationPlayState(ctx, song, false)
+                    }
+                }
             }
         }
     }
 
-    fun stop() {
+    fun resume(context: Context) {
+        mediaPlayer?.let {
+            if (!it.isPlaying) {
+                it.start()
+                _isPlaying.value = true
+
+                // Update notification with playing state
+                _currentSong.value?.let { song ->
+                    NotificationUtil.updateNotificationPlayState(context, song, true)
+                }
+            }
+        }
+    }
+
+    fun stop(context: Context? = null) {
         mediaPlayer?.release()
         mediaPlayer = null
         _isPlaying.value = false
         _currentSong.value = null
         currentPosition = 0
         Log.d("MediaPlayerManager", "Playback stopped")
+
+        // Cancel notification
+        context?.let { ctx ->
+            NotificationUtil.cancelMusicNotification(ctx)
+        }
+    }
+
+    fun previous(context: Context) {
+        if (currentIndex > 0 && songList.isNotEmpty()) {
+            currentIndex--
+            val prevSong = songList[currentIndex]
+            val uri = Uri.parse(prevSong.filePath)
+            val isRemote = prevSong.filePath.startsWith("http://") || prevSong.filePath.startsWith("https://")
+
+            play(
+                song = prevSong,
+                uri = if (isRemote) null else uri,
+                contentResolver = if (isRemote) null else context.contentResolver,
+                isRemote = isRemote,
+                context = context
+            )
+        }
+    }
+
+    fun next(context: Context) {
+        if (currentIndex < songList.size - 1 && songList.isNotEmpty()) {
+            currentIndex++
+            val nextSong = songList[currentIndex]
+            val uri = Uri.parse(nextSong.filePath)
+            val isRemote = nextSong.filePath.startsWith("http://") || nextSong.filePath.startsWith("https://")
+
+            play(
+                song = nextSong,
+                uri = if (isRemote) null else uri,
+                contentResolver = if (isRemote) null else context.contentResolver,
+                isRemote = isRemote,
+                context = context
+            )
+        }
     }
 
     fun getPlayer(): MediaPlayer? = mediaPlayer

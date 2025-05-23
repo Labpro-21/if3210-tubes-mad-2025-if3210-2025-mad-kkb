@@ -62,7 +62,8 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                                 MediaPlayerManager.play(
                                     song = song,
                                     uri = Uri.parse(song.filePath),
-                                    contentResolver = context.contentResolver
+                                    contentResolver = context.contentResolver,
+                                    context = context
                                 )
                             }
                         },
