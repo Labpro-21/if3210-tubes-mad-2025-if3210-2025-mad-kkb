@@ -8,6 +8,7 @@ import com.kkb.purrytify.TokenStorage
 import com.kkb.purrytify.UserSong
 import com.kkb.purrytify.data.dao.SongDao
 import com.kkb.purrytify.data.dao.UserSongDao
+import com.kkb.purrytify.data.model.ChartSong
 import com.kkb.purrytify.data.model.Song
 import com.kkb.purrytify.data.model.UserSongs
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,11 +18,12 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import javax.inject.Inject
-
+import com.kkb.purrytify.data.remote.ApiService
 @HiltViewModel
 class SongViewModel @Inject constructor(
     private val songDao: SongDao,
     private val userSongDao: UserSongDao,
+    private val apiService: ApiService,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
     private val _songs = MutableStateFlow<List<Song>>(emptyList())
@@ -29,6 +31,9 @@ class SongViewModel @Inject constructor(
 
     private val _selectedSong = MutableStateFlow<Song?>(null)
     val selectedSong: StateFlow<Song?> = _selectedSong.asStateFlow()
+
+    private val _remoteSong = MutableStateFlow<UserSong?>(null)
+    val remoteSong: StateFlow<UserSong?> = _remoteSong.asStateFlow()
 
     private val _userSongs = MutableStateFlow<List<UserSongs>>(emptyList())
     val userSongs: StateFlow<List<UserSongs>> = _userSongs.asStateFlow()
@@ -210,6 +215,44 @@ class SongViewModel @Inject constructor(
                 }
             } else {
                 Log.e("SongViewModel", "updateTimeListened failed: userId is null")
+            }
+        }
+    }
+
+    fun getRemoteSong(id: Int?) {
+        if (id == null) {
+            _remoteSong.value = null
+            return
+        }
+        // Prevent re-fetching if already fetched
+        if (_remoteSong.value?.songId == id) return
+
+        viewModelScope.launch {
+            try {
+                val response = apiService.getSongById(id)
+                if (response.isSuccessful) {
+                    response.body()?.let { chartSong ->
+                        // Convert ChartSong to UserSong
+                        val song = UserSong(
+                            userId = 0,
+                            songId = chartSong.id,
+                            title = chartSong.title,
+                            artist = chartSong.artist,
+                            filePath = chartSong.url,
+                            coverPath = chartSong.artwork,
+                            isLiked = false,
+                            createdAt = java.time.LocalDateTime.now(),
+                            lastPlayed = null
+                        )
+                        _remoteSong.value = song
+                    } ?: run {
+                        _remoteSong.value = null
+                    }
+                } else {
+                    _remoteSong.value = null
+                }
+            } catch (e: Exception) {
+                _remoteSong.value = null
             }
         }
     }

@@ -35,6 +35,8 @@ import com.kkb.purrytify.data.model.Song
 import com.kkb.purrytify.util.MediaPlayerManager
 import com.kkb.purrytify.viewmodel.SongViewModel
 import kotlinx.coroutines.delay
+import android.content.Intent
+
 
 //@Preview
 @Composable
@@ -95,6 +97,7 @@ fun TrackScreen(
         }
     }
 
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -118,7 +121,16 @@ fun TrackScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                IconButton(onClick = { navController.popBackStack() }) {
+                IconButton(onClick = {
+                        // Try to pop from back stack, if not possible go to home
+                        val popped = navController.popBackStack()
+                        if (!popped) {
+                            navController.navigate("home") {
+                                popUpTo("home") { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                }) {
                     Icon(
                         imageVector = Icons.Default.ExpandMore,
                         contentDescription = "Back",
@@ -144,11 +156,19 @@ fun TrackScreen(
                             onClick = {
                                 showMenu = false
                                 viewModel.deleteSong(currentSong)
-                                navController.popBackStack()
+                                // Try to pop from back stack, if not possible go to home
+                                val popped = navController.popBackStack()
+                                if (!popped) {
+                                    navController.navigate("home") {
+                                        popUpTo("home") { inclusive = true }
+                                        launchSingleTop = true
+                                    }
+                                }
                             }
                         )
                     }
                 }
+
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -294,6 +314,30 @@ fun TrackScreen(
                         modifier = Modifier.size(32.dp)
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ){
+                ShareSongButton(currentSong)
+//                val domain = context.getString(R.string.deeplink_domain)
+//                IconButton(onClick = {
+//                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+//                        type = "text/plain"
+//                        putExtra(Intent.EXTRA_SUBJECT, "Check out this song!")
+//                        putExtra(
+//                            Intent.EXTRA_TEXT,
+//                            "https://$domain/song/${currentSong.songId}"
+//                        )
+//                    }
+//                    context.startActivity(Intent.createChooser(shareIntent, "Share song via"))
+//                }) {
+//                    Icon(imageVector = Icons.Default.Share, contentDescription = "Share", tint = Color.White)
+//                }
             }
         }
     }

@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Purrytify</string>
     <string name="base_url">http://34.101.226.132:3000</string>
+    <string name="deeplink_domain">dl-server-3sr31hvwa-rendangmunirs-projects.vercel.app</string>
 </resources>

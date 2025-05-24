@@ -1,5 +1,6 @@
 package com.kkb.purrytify
 
+import android.net.Uri
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import android.os.Bundle
@@ -21,7 +22,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import com.kkb.purrytify.data.remote.ApiService
 import com.kkb.purrytify.viewmodel.ChartViewModel
@@ -40,7 +43,18 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             val loggedIn = TokenStorage.refreshAccessTokenIfNeeded(context, apiService)
             Log.d("TokenStorage", "loggedIn: $loggedIn")
-            val initialRoute = if (loggedIn) "home" else "login"
+
+            // Handle deep link
+            val data: Uri? = intent?.data
+            val deepLinkSongId = if (data?.scheme == "purrytify" && data.host == "song") {
+                data.lastPathSegment?.toIntOrNull()
+            } else null
+
+            val initialRoute = when {
+                deepLinkSongId != null -> "track-link/$deepLinkSongId"
+                loggedIn -> "home"
+                else -> "login"
+            }
 
             setContent {
                 val navController = rememberNavController()
@@ -69,30 +83,71 @@ class MainActivity : ComponentActivity() {
                             LibraryScreen(navController = navController, currentRoute = "library")
                         }
 
-                    composable(
-                        "track/{songId}",
-                        arguments = listOf(navArgument("songId") { type = NavType.IntType })
-                    ) { backStackEntry ->
-                        val songId = backStackEntry.arguments?.getInt("songId")
-                        val viewModel: SongViewModel = hiltViewModel()
-                        val selectedSong = viewModel.getSongById(songId) // You implement this
-                        val songs by viewModel.userSongList.collectAsState()
-                        selectedSong?.let { song ->
-                            val index = songs.indexOfFirst { it.songId == song.id }
-                            Log.d("idsong", "id: $index")
-                            Log.d("songids", "$songs")
-                            if (index != -1) {
-                                TrackScreen(
-                                    songs = songs,
-                                    initialIndex = index,
-                                    navController = navController,
-                                    viewModel = viewModel
-                                )
-                            } else {
-                                Log.e("idsong", "Song not found in the list")
+                        composable(
+                            "track-link/{songId}",
+                            arguments = listOf(navArgument("songId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val songId = backStackEntry.arguments?.getInt("songId")
+                            val viewModel: SongViewModel = hiltViewModel()
+                            val songs by viewModel.userSongList.collectAsState()
+                            val remoteSong by viewModel.remoteSong.collectAsState()
+                            Log.d("songId", "link: $songId")
+
+                            // Find the song object in the downloaded songs list
+                            val selectedSong = songs.find { it.songId == songId }
+
+                            // If not found, trigger remote fetch
+                            if (selectedSong == null && songId != null) {
+                                LaunchedEffect(songId) {
+                                    viewModel.getRemoteSong(songId)
+                                }
+                            }
+
+                            // Use selectedSong if available, otherwise use remoteSong
+                            val userSong = selectedSong ?: remoteSong
+
+                            // Loading state if remoteSong is still null and song not found locally
+                            if (userSong == null) {
+                                // Show loading or error UI here if needed
+                                Log.e("idsong", "Song not found in the database")
+                                // You may want to show a ProgressBar or a placeholder here
+                                return@composable
+                            }
+
+                            // Reorder the song list: linked song first, then the rest (no duplicates)
+                            val reorderedSongs = listOf(userSong) + songs.filter { it.songId != userSong.songId }
+
+                            TrackScreen(
+                                songs = reorderedSongs,
+                                initialIndex = 0,
+                                navController = navController,
+                                viewModel = viewModel
+                            )
+                        }
+                        composable(
+                            "track/{songId}",
+                            arguments = listOf(navArgument("songId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val songId = backStackEntry.arguments?.getInt("songId")
+                            val viewModel: SongViewModel = hiltViewModel()
+                            val selectedSong = viewModel.getSongById(songId) // You implement this
+                            val songs by viewModel.userSongList.collectAsState()
+                            selectedSong?.let { song ->
+                                val index = songs.indexOfFirst { it.songId == song.id }
+                                Log.d("idsong", "id: $index")
+                                Log.d("songids", "$songs")
+                                if (index != -1) {
+                                    TrackScreen(
+                                        songs = songs,
+                                        initialIndex = index,
+                                        navController = navController,
+                                        viewModel = viewModel
+                                    )
+                                } else {
+                                    Log.e("idsong", "Song not found in the list")
+                                }
                             }
                         }
-                    }
 
                     composable(
                         "track_chart/{index}",
@@ -104,7 +159,7 @@ class MainActivity : ComponentActivity() {
                         val chartViewModel: ChartViewModel = hiltViewModel()
                         val chartSongs by chartViewModel.chartSongs.collectAsState()
                         val isLoading by chartViewModel.isLoading.collectAsState()
-
+                        Log.d("idsong_deeplink", "songId: $index")
                         // Fetch if empty
                         LaunchedEffect(chartSongs) {
                             if (chartSongs.isEmpty()) {
