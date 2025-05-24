@@ -28,9 +28,11 @@ import kotlinx.coroutines.launch
 @Composable
 fun ChartScreen(
     navController: NavController,
-    viewModel: ChartViewModel = hiltViewModel(),
-    chartType: String = "global"
+    viewModel: ChartViewModel = hiltViewModel()
 ) {
+    val chartSongs by viewModel.chartSongs.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -77,29 +79,7 @@ fun ChartScreen(
                             .fillMaxSize()
                             .padding(16.dp)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(onClick = { navController.popBackStack() }) {
-                                Icon(
-                                    imageVector = Icons.Default.ArrowBack,
-                                    contentDescription = "Back",
-                                    tint = Color.White
-                                )
-                            }
-                            
-                            Text(
-                                text = chartTitle,
-                                color = Color.White,
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
-                        }
-                        Row(
+                       Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 8.dp),
@@ -110,8 +90,8 @@ fun ChartScreen(
                                 onClick = {
                                     if (chartSongs.isNotEmpty()) {
                                         coroutineScope.launch {
-                                            viewModel.downloadChartToLocal(userId, currentChartType)
-                                            snackbarHostState.showSnackbar("$chartTitle downloaded to library")
+                                            viewModel.downloadChartToLocal(userId)
+                                            snackbarHostState.showSnackbar("Chart downloaded to library")
                                         }
                                     }
                                 },
@@ -145,72 +125,49 @@ fun ChartScreen(
                         }
 
                         LazyColumn(
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier
+                                .fillMaxSize()
                         ) {
-                            itemsIndexed(chartSongs) { index, song ->
-                                ChartSongItem(
-                                    song = song,
-                                    onClick = {
-                                        navController.navigate("track_chart/${currentChartType.lowercase()}/$index")
+                            items(chartSongs) { song ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "${song.rank}",
+                                        color = Color.White,
+                                        modifier = Modifier.width(32.dp)
+                                    )
+                                    AsyncImage(
+                                        model = song.artwork,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(56.dp)
+                                            .padding(end = 12.dp)
+                                    )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = song.title,
+                                            color = Color.White
+                                        )
+                                        Text(
+                                            text = song.artist,
+                                            color = Color.Gray
+                                        )
                                     }
-                                )
+                                    Text(
+                                        text = song.duration,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(start = 8.dp)
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun ChartSongItem(song: ChartSong, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "${song.rank}",
-            color = Color.White,
-            modifier = Modifier.width(32.dp)
-        )
-        AsyncImage(
-            model = song.artwork,
-            contentDescription = null,
-            modifier = Modifier
-                .size(56.dp)
-                .padding(end = 12.dp)
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = song.title,
-                color = Color.White
-            )
-            Text(
-                text = song.artist,
-                color = Color.Gray
-            )
-        }
-        Text(
-            text = song.duration,
-            color = Color.White,
-            modifier = Modifier.padding(start = 8.dp)
-        )
-    }
-}
-
-private fun getChartTitle(chartType: String): String {
-    return when (chartType.lowercase()) {
-        "id" -> "Indonesia Top 10"
-        "my" -> "Malaysia Top 10"
-        "us" -> "United States Top 10"
-        "uk" -> "United Kingdom Top 10"
-        "ch" -> "Switzerland Top 10"
-        "de" -> "Germany Top 10"
-        "br" -> "Brazil Top 10"
-        else -> "Global Top 50"
     }
 }
