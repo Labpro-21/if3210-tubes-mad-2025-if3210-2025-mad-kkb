@@ -4,6 +4,8 @@
     package="com.kkb.purrytify">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".module.PurrytifyApp"
@@ -58,6 +60,16 @@
                     android:pathPattern="/.*" />
             </intent-filter>
         </activity>
+        <receiver
+            android:name=".receivers.MediaControlReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.kkb.purrytify.PLAY" />
+                <action android:name="com.kkb.purrytify.PAUSE" />
+                <action android:name="com.kkb.purrytify.PREVIOUS" />
+                <action android:name="com.kkb.purrytify.NEXT" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

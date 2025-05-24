@@ -27,6 +27,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import com.kkb.purrytify.data.remote.ApiService
+import com.kkb.purrytify.util.MediaPlayerManager
 import com.kkb.purrytify.viewmodel.ChartViewModel
 import javax.inject.Inject
 
@@ -125,73 +126,73 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(
-                            "track/{songId}",
-                            arguments = listOf(navArgument("songId") { type = NavType.IntType })
-                        ) { backStackEntry ->
-                            val songId = backStackEntry.arguments?.getInt("songId")
-                            val viewModel: SongViewModel = hiltViewModel()
-                            val selectedSong = viewModel.getSongById(songId) // You implement this
-                            val songs by viewModel.userSongList.collectAsState()
-                            selectedSong?.let { song ->
-                                val index = songs.indexOfFirst { it.songId == song.id }
-                                Log.d("idsong", "id: $index")
-                                Log.d("songids", "$songs")
-                                if (index != -1) {
-                                    TrackScreen(
-                                        songs = songs,
-                                        initialIndex = index,
-                                        navController = navController,
-                                        viewModel = viewModel
-                                    )
-                                } else {
-                                    Log.e("idsong", "Song not found in the list")
+                        "track/{songId}",
+                        arguments = listOf(navArgument("songId") { type = NavType.IntType })
+                    ) { backStackEntry ->
+                        val songId = backStackEntry.arguments?.getInt("songId")
+                        val viewModel: SongViewModel = hiltViewModel()
+                        val selectedSong = viewModel.getSongById(songId)
+                        val songs by viewModel.userSongList.collectAsState()
+                        selectedSong?.let { song ->
+                            val index = songs.indexOfFirst { it.songId == song.id }
+                            Log.d("idsong", "id: $index")
+                            Log.d("songids", "$songs")
+                            if (index != -1) {
+                                // Set the playlist in MediaPlayerManager
+                                LaunchedEffect(songs, index) {
+                                    MediaPlayerManager.setPlaylist(songs, index)
+                                }
+                                TrackScreen(
+                                    navController = navController,
+                                    viewModel = viewModel
+                                )
+                            } else {
+                                Log.e("idsong", "Song not found in the list")
                                 }
                             }
                         }
 
                     composable(
-                        "track_chart/{index}",
+                        "track_chart/{chartType}/{index}",
                         arguments = listOf(
+                            navArgument("chartType") { type = NavType.StringType },
                             navArgument("index") { type = NavType.IntType }
                         )
                     ) { backStackEntry ->
+                        val chartType = backStackEntry.arguments?.getString("chartType") ?: "global"
                         val index = backStackEntry.arguments?.getInt("index") ?: 0
                         val chartViewModel: ChartViewModel = hiltViewModel()
+
                         val chartSongs by chartViewModel.chartSongs.collectAsState()
                         val isLoading by chartViewModel.isLoading.collectAsState()
-                        Log.d("idsong_deeplink", "songId: $index")
-                        // Fetch if empty
-                        LaunchedEffect(chartSongs) {
-                            if (chartSongs.isEmpty()) {
-                                chartViewModel.fetchGlobalChart()
-                            }
+
+                        LaunchedEffect(chartType) {
+                            chartViewModel.fetchChart(chartType)
                         }
-                        val idsArg = chartSongs.joinToString(",") { it.id.toString() }
-                        val ids = idsArg.split(",").mapNotNull { it.toIntOrNull() }
-                        val selectedSongs = chartSongs.filter { it.id in ids }
-                        val userSongs = selectedSongs.map {
+
+                        val userSongs = chartSongs.map { chartSong ->
                             UserSong(
                                 userId = 0,
-                                songId = it.id,
-                                title = it.title,
-                                artist = it.artist,
-                                filePath = it.url,
-                                coverPath = it.artwork,
+                                songId = chartSong.id,
+                                title = chartSong.title,
+                                artist = chartSong.artist,
+                                filePath = chartSong.url,
+                                coverPath = chartSong.artwork,
                                 isLiked = false,
                                 createdAt = java.time.LocalDateTime.now(),
                                 lastPlayed = null
                             )
                         }
-                        Log.d("charttrack", userSongs.toString())
-                        Log.d("charttrackidx", index.toString())
+
                         if (userSongs.isNotEmpty()) {
+                            val safeIndex = index.coerceIn(userSongs.indices)
+                            LaunchedEffect(userSongs, safeIndex) {
+                                MediaPlayerManager.setPlaylist(userSongs, safeIndex)
+                            }
                             TrackScreen(
-                                songs = userSongs,
-                                initialIndex = index.coerceIn(userSongs.indices),
                                 navController = navController
                             )
                         }
-
                     }
 
                     composable(
@@ -200,17 +201,48 @@ class MainActivity : ComponentActivity() {
                         ChartScreen(navController = navController)
                     }
 
+                    composable(
+                        "charts/ID",
+                    ) { backStackEntry ->
+                        ChartScreen(navController = navController, chartType = "ID")
+                    }
 
-//                    composable("track") {
-//                        val backStackEntry = remember {
-//                            navController.getBackStackEntry("home")
-//                        }
-//
-//                        val viewModel: SongViewModel = hiltViewModel(backStackEntry)
-//                        val selectedSong = viewModel.getSelectedSong()
-//                        selectedSong?.let {
-//                            TrackScreen(song = it)
-//                        }
+                    composable(
+                        "charts/MY",
+                    ) { backStackEntry ->
+                        ChartScreen(navController = navController, chartType = "MY")
+                    }
+
+                    composable(
+                        "charts/US",
+                    ) { backStackEntry ->
+                        ChartScreen(navController = navController, chartType = "US")
+                    }
+
+                    composable(
+                        "charts/UK",
+                    ) { backStackEntry ->
+                        ChartScreen(navController = navController, chartType = "UK")
+                    }
+
+                    composable(
+                        "charts/CH",
+                    ) { backStackEntry ->
+                        ChartScreen(navController = navController, chartType = "CH")
+                    }
+
+                    composable(
+                        "charts/DE",
+                    ) { backStackEntry ->
+                        ChartScreen(navController = navController, chartType = "DE")
+                    }
+
+                    composable(
+                        "charts/BR",
+                    ) { backStackEntry ->
+                        ChartScreen(navController = navController, chartType = "BR")
+                    }
+
                     }
                 }
             }

@@ -1,11 +1,12 @@
 package com.kkb.purrytify
 
-import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
@@ -14,29 +15,37 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.kkb.purrytify.data.model.ChartSong
 import com.kkb.purrytify.viewmodel.ChartViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun ChartScreen(
     navController: NavController,
-    viewModel: ChartViewModel = hiltViewModel()
+    viewModel: ChartViewModel = hiltViewModel(),
+    chartType: String = "global"
 ) {
-    val chartSongs by viewModel.chartSongs.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val userId = TokenStorage.getUserId(context)?.toIntOrNull() ?: 0
 
-    LaunchedEffect(Unit) {
-        viewModel.fetchGlobalChart()
+    LaunchedEffect(chartType) {
+        viewModel.fetchChart(chartType.lowercase())
     }
+
+    val chartSongs by viewModel.chartSongs.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val currentChartType by viewModel.currentChartType.collectAsState()
+
+    val chartTitle = getChartTitle(currentChartType)
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -68,7 +77,29 @@ fun ChartScreen(
                             .fillMaxSize()
                             .padding(16.dp)
                     ) {
-                       Row(
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(
+                                    imageVector = Icons.Default.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = Color.White
+                                )
+                            }
+                            
+                            Text(
+                                text = chartTitle,
+                                color = Color.White,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                        }
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 8.dp),
@@ -79,8 +110,8 @@ fun ChartScreen(
                                 onClick = {
                                     if (chartSongs.isNotEmpty()) {
                                         coroutineScope.launch {
-                                            viewModel.downloadChartToLocal(userId)
-                                            snackbarHostState.showSnackbar("Chart downloaded to library")
+                                            viewModel.downloadChartToLocal(userId, currentChartType)
+                                            snackbarHostState.showSnackbar("$chartTitle downloaded to library")
                                         }
                                     }
                                 },
@@ -91,12 +122,15 @@ fun ChartScreen(
                             ) {
                                 Icon(Icons.Default.Download, contentDescription = "Download")
                                 Spacer(Modifier.width(8.dp))
+                                Text("Download")
                             }
+                            
                             Spacer(modifier = Modifier.width(12.dp))
+
                             Button(
                                 onClick = {
                                     if (chartSongs.isNotEmpty()) {
-                                        navController.navigate("track_chart/0")
+                                        navController.navigate("track_chart/${currentChartType.lowercase()}/0")
                                     }
                                 },
                                 colors = ButtonDefaults.buttonColors(
@@ -106,53 +140,77 @@ fun ChartScreen(
                             ) {
                                 Icon(Icons.Default.PlayArrow, contentDescription = "Play All")
                                 Spacer(Modifier.width(8.dp))
+                                Text("Play All")
                             }
                         }
 
                         LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
+                            modifier = Modifier.fillMaxSize()
                         ) {
-                            items(chartSongs) { song ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "${song.rank}",
-                                        color = Color.White,
-                                        modifier = Modifier.width(32.dp)
-                                    )
-                                    AsyncImage(
-                                        model = song.artwork,
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .size(56.dp)
-                                            .padding(end = 12.dp)
-                                    )
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = song.title,
-                                            color = Color.White
-                                        )
-                                        Text(
-                                            text = song.artist,
-                                            color = Color.Gray
-                                        )
+                            itemsIndexed(chartSongs) { index, song ->
+                                ChartSongItem(
+                                    song = song,
+                                    onClick = {
+                                        navController.navigate("track_chart/${currentChartType.lowercase()}/$index")
                                     }
-                                    Text(
-                                        text = song.duration,
-                                        color = Color.White,
-                                        modifier = Modifier.padding(start = 8.dp)
-                                    )
-                                }
+                                )
                             }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun ChartSongItem(song: ChartSong, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "${song.rank}",
+            color = Color.White,
+            modifier = Modifier.width(32.dp)
+        )
+        AsyncImage(
+            model = song.artwork,
+            contentDescription = null,
+            modifier = Modifier
+                .size(56.dp)
+                .padding(end = 12.dp)
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = song.title,
+                color = Color.White
+            )
+            Text(
+                text = song.artist,
+                color = Color.Gray
+            )
+        }
+        Text(
+            text = song.duration,
+            color = Color.White,
+            modifier = Modifier.padding(start = 8.dp)
+        )
+    }
+}
+
+private fun getChartTitle(chartType: String): String {
+    return when (chartType.lowercase()) {
+        "id" -> "Indonesia Top 10"
+        "my" -> "Malaysia Top 10"
+        "us" -> "United States Top 10"
+        "uk" -> "United Kingdom Top 10"
+        "ch" -> "Switzerland Top 10"
+        "de" -> "Germany Top 10"
+        "br" -> "Brazil Top 10"
+        else -> "Global Top 50"
     }
 }

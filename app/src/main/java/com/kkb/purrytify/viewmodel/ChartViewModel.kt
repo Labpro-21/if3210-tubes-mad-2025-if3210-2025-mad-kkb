@@ -27,6 +27,9 @@ class ChartViewModel @Inject constructor(
     private val _chartSongs = MutableStateFlow<List<ChartSong>>(emptyList())
     val chartSongs: StateFlow<List<ChartSong>> = _chartSongs.asStateFlow()
 
+    private val _currentChartType = MutableStateFlow<String>("global")
+    val currentChartType: StateFlow<String> = _currentChartType.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -35,22 +38,33 @@ class ChartViewModel @Inject constructor(
 
     private var fetchJob: Job? = null
 
-    fun fetchGlobalChart(forceRefresh: Boolean = false) {
+    fun fetchChart(chartType: String = "global", forceRefresh: Boolean = false) {
         if (_isLoading.value) return
-        if (_chartSongs.value.isNotEmpty() && !forceRefresh) return
+        if (_chartSongs.value.isNotEmpty() && _currentChartType.value == chartType.lowercase() && !forceRefresh) return
 
         _isLoading.value = true
         _error.value = null
+        _currentChartType.value = chartType.lowercase()
 
         fetchJob?.cancel()
         fetchJob = viewModelScope.launch(Dispatchers.IO) {
             try {
-                val response = apiService.getTopGlobal()
+                val response = when (chartType.lowercase()) {
+                    "id" -> apiService.getTopID()
+                    "my" -> apiService.getTopMY()
+                    "us" -> apiService.getTopUS()
+                    "uk" -> apiService.getTopUK()
+                    "ch" -> apiService.getTopCH()
+                    "de" -> apiService.getTopDE()
+                    "br" -> apiService.getTopBR()
+                    else -> apiService.getTopGlobal()
+                }
+
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful) {
                         _chartSongs.value = response.body() ?: emptyList()
                     } else {
-                        _error.value = response.message()
+                        _error.value = response.message() ?: "Error loading ${getChartName(chartType)} charts"
                     }
                     _isLoading.value = false
                 }
@@ -63,13 +77,15 @@ class ChartViewModel @Inject constructor(
         }
     }
 
-    fun downloadChartToLocal(userId: Int) {
-        val chartSongs = _chartSongs.value
-        if (chartSongs.isEmpty()) return
+    fun downloadChartToLocal(userId: Int, chartType: String = "global") {
+        if (_chartSongs.value.isEmpty() || _currentChartType.value != chartType.lowercase()) {
+            fetchChart(chartType, true)
+        }
+        
+        if (_chartSongs.value.isEmpty()) return
 
         viewModelScope.launch(Dispatchers.IO) {
-            chartSongs.forEach { chartSong ->
-                // Map ChartSong to Song and UserSongs
+            _chartSongs.value.forEach { chartSong ->
                 val song = Song(
                     id = chartSong.id,
                     title = chartSong.title,
@@ -86,6 +102,19 @@ class ChartViewModel @Inject constructor(
                 )
                 songRepository.insertSongWithUserSong(song, userSong)
             }
+        }
+    }
+
+    private fun getChartName(chartType: String): String {
+        return when (chartType.lowercase()) {
+            "id" -> "Indonesia"
+            "my" -> "Malaysia"
+            "us" -> "United States"
+            "uk" -> "United Kingdom"
+            "ch" -> "Switzerland"
+            "de" -> "Germany"
+            "br" -> "Brazil"
+            else -> "Global"
         }
     }
 }
