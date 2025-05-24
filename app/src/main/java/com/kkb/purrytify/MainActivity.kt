@@ -117,10 +117,10 @@ class MainActivity : ComponentActivity() {
 
                             // Reorder the song list: linked song first, then the rest (no duplicates)
                             val reorderedSongs = listOf(userSong) + songs.filter { it.songId != userSong.songId }
-
+                            LaunchedEffect(reorderedSongs, 0) {
+                                MediaPlayerManager.setPlaylist(reorderedSongs, 0)
+                            }
                             TrackScreen(
-                                songs = reorderedSongs,
-                                initialIndex = 0,
                                 navController = navController,
                                 viewModel = viewModel
                             )

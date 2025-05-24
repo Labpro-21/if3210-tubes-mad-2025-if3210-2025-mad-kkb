@@ -77,6 +77,7 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation("com.google.zxing:core:3.5.3")
+    implementation("androidx.media:media:1.6.0")
     // OkHttp for logging and interceptors
     implementation ("com.squareup.okhttp3:okhttp:4.11.0")
     implementation ("com.squareup.okhttp3:logging-interceptor:4.11.0")

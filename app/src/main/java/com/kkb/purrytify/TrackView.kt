@@ -42,6 +42,7 @@ import android.content.Intent
 @Composable
 
 fun TrackScreen(
+
     navController: NavController,
     viewModel: SongViewModel = hiltViewModel()
 ) {
@@ -168,7 +169,7 @@ fun TrackScreen(
                             text = { Text("Hapus Lagu") },
                             onClick = {
                                 showMenu = false
-                                viewModel.deleteSong(currentSong)
+                                viewModel.deleteSong(currentSong!!)
                                 // Try to pop from back stack, if not possible go to home
                                 val popped = navController.popBackStack()
                                 if (!popped) {
@@ -328,7 +329,7 @@ fun TrackScreen(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ){
-                ShareSongButton(currentSong)
+                ShareSongButton(currentSong!!)
 //                val domain = context.getString(R.string.deeplink_domain)
 //                IconButton(onClick = {
 //                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
