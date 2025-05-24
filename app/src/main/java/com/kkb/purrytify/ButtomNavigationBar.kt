@@ -47,9 +47,23 @@ fun BottomNavigationBar(
         containerColor = Color.Black,
         tonalElevation = 8.dp
     ) {
-        items.forEach { item ->
+        items.forEachIndexed{ index, item ->
             val selected = currentRoute == item.route
-
+            // Add the Scan QR button after the Library item
+            if (index == 1) {
+                // Scan QR Menu Button
+                ScanQrMenuButton(
+                    onScanResult = { scannedUrl ->
+                        // Example: Extract songId from the URL and navigate
+                        val songId = scannedUrl.substringAfterLast("/").toIntOrNull()
+                        if (songId != null) {
+                            navController.navigate("track-link/$songId")
+                        } else {
+                            // Handle invalid QR (show snackbar, toast, etc.)
+                        }
+                    }
+                )
+            }
             if (item is BottomNavItem.Profile) {
                 NavigationBarItem(
                     icon = {

@@ -58,11 +58,13 @@ fun ShareSongButton(currentSong: UserSong) {
     var showDialog by remember { mutableStateOf(false) }
     var showQrDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val domain = context.getString(R.string.deeplink_domain)
-    val songUrl = "https://$domain/song/${currentSong.songId}"
+    val domain_url = context.getString(R.string.deeplink_domain)
+    val domain_custom = context.getString(R.string.deeplink_custom)
+    val songUrl = "https://$domain_url/song/${currentSong.songId}"
+    val songUrlCustom = "$domain_custom://song/${currentSong.songId}"
 
     // Create and remember QR bitmap OUTSIDE the dialog composable scope
-    val qrBitmap = remember(songUrl) { generateQrBitmap(songUrl) }
+    val qrBitmap = remember(songUrlCustom) { generateQrBitmap(songUrlCustom) }
 
     IconButton(onClick = { showDialog = true }) {
         Icon(imageVector = Icons.Default.Share, contentDescription = "Share", tint = Color.White)

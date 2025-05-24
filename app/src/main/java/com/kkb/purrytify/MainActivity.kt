@@ -83,6 +83,9 @@ class MainActivity : ComponentActivity() {
                         composable("library") {
                             LibraryScreen(navController = navController, currentRoute = "library")
                         }
+//                        composable("qr-scan"){
+//                            scan
+//                        }
 
                         composable(
                             "track-link/{songId}",
