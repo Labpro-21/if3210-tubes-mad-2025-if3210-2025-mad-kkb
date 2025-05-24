@@ -24,6 +24,11 @@ object MediaPlayerManager {
     fun setPlaylist(songs: List<UserSong>, startIndex: Int) {
         songList = songs
         currentIndex = startIndex
+//        Log.d("media songs", songList.toString())
+//        Log.d("media songs", currentIndex.toString())
+        if (startIndex >= 0 && startIndex < songs.size) {
+            _currentSong.value = songs[startIndex]
+        }
     }
 
     fun play(
@@ -32,11 +37,12 @@ object MediaPlayerManager {
         contentResolver: ContentResolver?,
         isRemote: Boolean = false,
         onError: (Exception) -> Unit = {},
-        context: Context
+        context: Context,
+        onSongStarted: ((Int) -> Unit)? = null
     ) {
         try {
             val isResuming = _currentSong.value?.songId == song.songId && currentPosition > 0
-
+//            Log.d("playingsong", song.toString())
             if (isResuming) {
                 mediaPlayer?.let {
                     if (!it.isPlaying) {
@@ -75,6 +81,7 @@ object MediaPlayerManager {
                     Log.d("MediaPlayerManager", "Playback started from beginning")
                     // Show notification with playing state
                     NotificationUtil.showMusicNotification(context, song, true)
+                    onSongStarted?.invoke(song.songId)
                 }
 
                 setOnCompletionListener {
@@ -143,8 +150,12 @@ object MediaPlayerManager {
     }
 
     fun previous(context: Context) {
-        if (currentIndex > 0 && songList.isNotEmpty()) {
-            currentIndex--
+        if (songList.isNotEmpty()) {
+            currentIndex = if (currentIndex <= 0) {
+                songList.size - 1
+            } else {
+                currentIndex - 1
+            }
             val prevSong = songList[currentIndex]
             val uri = Uri.parse(prevSong.filePath)
             val isRemote = prevSong.filePath.startsWith("http://") || prevSong.filePath.startsWith("https://")
@@ -160,9 +171,16 @@ object MediaPlayerManager {
     }
 
     fun next(context: Context) {
-        if (currentIndex < songList.size - 1 && songList.isNotEmpty()) {
-            currentIndex++
+        if (songList.isNotEmpty()) {
+            currentIndex = if (currentIndex >= songList.size - 1) {
+                0
+            } else {
+                currentIndex + 1
+            }
             val nextSong = songList[currentIndex]
+            Log.d("nextsong", nextSong.toString())
+            Log.d("nextsong", songList.toString())
+            Log.d("nextsong(idx)", currentIndex.toString())
             val uri = Uri.parse(nextSong.filePath)
             val isRemote = nextSong.filePath.startsWith("http://") || nextSong.filePath.startsWith("https://")
 
@@ -171,10 +189,13 @@ object MediaPlayerManager {
                 uri = if (isRemote) null else uri,
                 contentResolver = if (isRemote) null else context.contentResolver,
                 isRemote = isRemote,
-                context = context
+                context = context,
+
             )
         }
     }
 
     fun getPlayer(): MediaPlayer? = mediaPlayer
+
+    fun getCurrentSong(): UserSong? = _currentSong.value
 }

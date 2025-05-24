@@ -40,45 +40,55 @@ import kotlinx.coroutines.delay
 @Composable
 
 fun TrackScreen(
-    songs: List<UserSong>,
-    initialIndex: Int,
     navController: NavController,
     viewModel: SongViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val contentResolver = context.contentResolver
-    val viewModel = hiltViewModel<SongViewModel>()
-    var currentIndex by remember { mutableStateOf(initialIndex) }
-    val currentSong = songs.getOrNull(currentIndex) ?: return
-    viewModel.updateLastPlayed(currentSong.songId)
-    var isPlaying by remember { mutableStateOf(false) }
+    val currentSong by MediaPlayerManager.currentSong.collectAsState()
+    val isPlayerPlaying by MediaPlayerManager.isPlaying.collectAsState()
+    if (currentSong == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "No song currently playing",
+                color = Color.White
+            )
+        }
+        return
+    }
+
+    val song = currentSong!!
+
+    LaunchedEffect(Unit) {
+        val currentPlayingSong = MediaPlayerManager.getCurrentSong()
+        if (currentPlayingSong?.songId != song.songId || !isPlayerPlaying) {
+            Log.d("tess", song.toString())
+            val uri = Uri.parse(song.filePath)
+            val isRemote = song.filePath.startsWith("http://") || song.filePath.startsWith("https://")
+            MediaPlayerManager.play(
+                song = song,
+                uri = if (isRemote) null else uri,
+                contentResolver = if (isRemote) null else contentResolver,
+                isRemote = isRemote,
+                context = context,
+                onSongStarted = { songId ->
+                    viewModel.updateLastPlayed(songId)
+                }
+            )
+        }
+    }
+
     var playbackProgress by remember { mutableStateOf(0f) }
     var duration by remember { mutableStateOf(1f) }
     var lastReportedSeconds by remember { mutableStateOf(0L) }
-
     var showMenu by remember { mutableStateOf(false) }
 
-    val uri = Uri.parse(currentSong.filePath)
-
-    LaunchedEffect(currentIndex) {
-        val isRemote = currentSong.filePath.startsWith("http://") || currentSong.filePath.startsWith("https://")
-        val uri = if (isRemote) null else Uri.parse(currentSong.filePath)
-        // Set the playlist for the manager
-        MediaPlayerManager.setPlaylist(songs, currentIndex)
-        MediaPlayerManager.play(
-            song = currentSong,
-            uri = uri,
-            contentResolver = if (isRemote) null else contentResolver,
-            isRemote = isRemote,
-            onError = { e -> Log.e("TrackScreen", "Error: ${e.message}") },
-            context = context
-        )
-        isPlaying = true
-    }
-
-    LaunchedEffect(isPlaying, currentSong.songId) {
+    LaunchedEffect(isPlayerPlaying, song.songId) {
         lastReportedSeconds = 0L
-        while (isPlaying) {
+        while (isPlayerPlaying) {
             val player = MediaPlayerManager.getPlayer()
             if (player != null && player.isPlaying) {
                 val current = player.currentPosition
@@ -89,7 +99,7 @@ fun TrackScreen(
                 if (seconds > lastReportedSeconds) {
                     val delta = seconds - lastReportedSeconds
                     if (delta > 0) {
-                        viewModel.updateTimeListened(currentSong.songId, delta)
+//                        viewModel.updateTimeListened(song.songId, delta)
                         lastReportedSeconds = seconds
                     }
                 }
@@ -146,7 +156,7 @@ fun TrackScreen(
                             text = { Text("Hapus Lagu") },
                             onClick = {
                                 showMenu = false
-                                viewModel.deleteSong(currentSong)
+//                                viewModel.deleteSong(song)
                                 navController.popBackStack()
                             }
                         )
@@ -158,7 +168,7 @@ fun TrackScreen(
 
             val painter = rememberAsyncImagePainter(
                 ImageRequest.Builder(LocalContext.current)
-                    .data(currentSong.coverPath)
+                    .data(song.coverPath)
                     .placeholder(R.drawable.album_placeholder)
                     .error(R.drawable.album_placeholder)
                     .size(280)
@@ -177,24 +187,24 @@ fun TrackScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = currentSong.title,
+                text = song.title,
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
-                text = currentSong.artist,
+                text = song.artist,
                 color = Color.LightGray,
                 fontSize = 14.sp
             )
 
             Spacer(modifier = Modifier.height(8.dp))
             val songState by viewModel.userSongList.collectAsState()
-            val song = songState.find { it.songId == currentSong.songId }
-            val isLiked = song?.isLiked ?: false
+            val userSong = songState.find { it.songId == song.songId }
+            val isLiked = userSong?.isLiked ?: false
             IconButton(onClick = {
-                viewModel.toggleLike(currentSong.songId)
+                viewModel.toggleLike(song.songId)
             }) {
                 Icon(
                     imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -249,8 +259,7 @@ fun TrackScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = {
-                    if (currentIndex > 0) currentIndex--
-                    else currentIndex = songs.lastIndex
+                    MediaPlayerManager.previous(context)
                 }) {
                     Icon(
                         Icons.Default.SkipPrevious,
@@ -262,25 +271,18 @@ fun TrackScreen(
 
                 IconButton(
                     onClick = {
-                        if (!isPlaying) {
-                            MediaPlayerManager.play(
-                                song = currentSong,
-                                uri = uri,
-                                contentResolver = contentResolver,
-                                onError = { e -> Log.e("TrackScreen", "Error: ${e.message}") },
-                                context = context
-                            )
+                        if (isPlayerPlaying) {
+                            MediaPlayerManager.pause(context)
                         } else {
-                            MediaPlayerManager.pause()
+                            MediaPlayerManager.resume(context)
                         }
-                        isPlaying = MediaPlayerManager.isPlaying.value
                     },
                     modifier = Modifier
                         .size(64.dp)
                         .background(Color.White, shape = CircleShape)
                 ) {
                     Icon(
-                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        imageVector = if (isPlayerPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                         contentDescription = "Play",
                         tint = Color.Black,
                         modifier = Modifier.size(32.dp)
@@ -288,8 +290,7 @@ fun TrackScreen(
                 }
 
                 IconButton(onClick = {
-                    if (currentIndex < songs.lastIndex) currentIndex++
-                    else currentIndex = 0
+                    MediaPlayerManager.next(context)
                 }) {
                     Icon(
                         Icons.Default.SkipNext,

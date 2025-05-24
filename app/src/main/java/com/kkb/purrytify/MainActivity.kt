@@ -24,6 +24,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import com.kkb.purrytify.data.remote.ApiService
+import com.kkb.purrytify.util.MediaPlayerManager
 import com.kkb.purrytify.viewmodel.ChartViewModel
 import javax.inject.Inject
 
@@ -82,9 +83,11 @@ class MainActivity : ComponentActivity() {
                             Log.d("idsong", "id: $index")
                             Log.d("songids", "$songs")
                             if (index != -1) {
+                                // Set the playlist in MediaPlayerManager
+                                LaunchedEffect(songs, index) {
+                                    MediaPlayerManager.setPlaylist(songs, index)
+                                }
                                 TrackScreen(
-                                    songs = songs,
-                                    initialIndex = index,
                                     navController = navController,
                                     viewModel = viewModel
                                 )
@@ -125,11 +128,13 @@ class MainActivity : ComponentActivity() {
                                 lastPlayed = null
                             )
                         }
-                        
+
                         if (userSongs.isNotEmpty()) {
+                            val safeIndex = index.coerceIn(userSongs.indices)
+                            LaunchedEffect(userSongs, safeIndex) {
+                                MediaPlayerManager.setPlaylist(userSongs, safeIndex)
+                            }
                             TrackScreen(
-                                songs = userSongs,
-                                initialIndex = index.coerceIn(userSongs.indices),
                                 navController = navController
                             )
                         }
