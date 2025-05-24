@@ -28,6 +28,8 @@ import com.google.zxing.qrcode.QRCodeWriter
 
 // Android bitmap and file
 import android.graphics.Bitmap
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import java.io.File
 import java.io.FileOutputStream
 import android.graphics.Color as AndroidColor
@@ -59,7 +61,8 @@ fun ShareSongButton(currentSong: UserSong) {
     val domain = context.getString(R.string.deeplink_domain)
     val songUrl = "https://$domain/song/${currentSong.songId}"
 
-
+    // Create and remember QR bitmap OUTSIDE the dialog composable scope
+    val qrBitmap = remember(songUrl) { generateQrBitmap(songUrl) }
 
     IconButton(onClick = { showDialog = true }) {
         Icon(imageVector = Icons.Default.Share, contentDescription = "Share", tint = Color.White)
@@ -104,7 +107,6 @@ fun ShareSongButton(currentSong: UserSong) {
             title = { Text("QR Lagu") },
             text = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    val qrBitmap = remember(songUrl) { generateQrBitmap(songUrl) }
                     qrBitmap?.let {
                         Image(
                             bitmap = it.asImageBitmap(),
@@ -117,16 +119,18 @@ fun ShareSongButton(currentSong: UserSong) {
                 }
             },
             confirmButton = {
+
+                // Share QR as image
+                qrBitmap?.let { bitmap ->
+                    //this is the error
+                    shareQrBitmap(bitmap)
+                }
                 TextButton(onClick = {
-                    // Share QR as image
-                    val qrBitmap = generateQrBitmap(songUrl)
-                    qrBitmap?.let { bitmap ->
-                        shareQrBitmap(context, bitmap)
-                    }
                     showQrDialog = false
                 }) {
                     Text("Share QR via Apps")
                 }
+
             }
         )
     }
@@ -150,16 +154,31 @@ fun generateQrBitmap(data: String): Bitmap? {
 }
 
 // Helper: Share QR Bitmap (using FileProvider)
-fun shareQrBitmap(context: Context, bitmap: Bitmap) {
-    val cachePath = File(context.cacheDir, "images")
-    cachePath.mkdirs()
-    val file = File(cachePath, "qr.png")
-    FileOutputStream(file).use { out -> bitmap.compress(Bitmap.CompressFormat.PNG, 100, out) }
-    val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
-    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-        type = "image/png"
-        putExtra(Intent.EXTRA_STREAM, uri)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+@Composable
+fun shareQrBitmap(qrBitmap: Bitmap, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+
+    // Prepare launcher for the share intent
+    val shareQrLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { /* no-op for share */ }
+
+    Button(
+        onClick = {
+            val cachePath = File(context.cacheDir, "images")
+            cachePath.mkdirs()
+            val file = File(cachePath, "qr.png")
+            FileOutputStream(file).use { out -> qrBitmap.compress(Bitmap.CompressFormat.PNG, 100, out) }
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            shareQrLauncher.launch(Intent.createChooser(shareIntent, "Share QR via"))
+        },
+        modifier = modifier
+    ) {
+        Text("Share QR via Apps")
     }
-    context.startActivity(Intent.createChooser(shareIntent, "Share QR via"))
 }
