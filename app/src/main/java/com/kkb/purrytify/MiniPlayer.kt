@@ -70,14 +70,14 @@ fun MiniPlayer(
                 val total = player.duration.takeIf { it > 0 } ?: 1
                 playbackProgress = current.toFloat() / total
                 duration = total.toFloat()
-                val seconds = (player.currentPosition / 1000L)
-                if (seconds > lastReportedSeconds) {
-                    val delta = seconds - lastReportedSeconds
-                    if (delta > 0) {
-                        viewModel.updateTimeListened(currentSong.songId, delta)
-                        lastReportedSeconds = seconds
-                    }
-                }
+//                val seconds = (player.currentPosition / 1000L)
+//                if (seconds > lastReportedSeconds) {
+//                    val delta = seconds - lastReportedSeconds
+//                    if (delta > 0) {
+//                        viewModel.updateTimeListened(currentSong.songId, delta)
+//                        lastReportedSeconds = seconds
+//                    }
+//                }
             }
             delay(500)
         }

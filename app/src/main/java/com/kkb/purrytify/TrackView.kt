@@ -82,9 +82,9 @@ fun TrackScreen(
                 contentResolver = if (isRemote) null else contentResolver,
                 isRemote = isRemote,
                 context = context,
-                onSongStarted = { songId ->
-                    viewModel.updateLastPlayed(songId)
-                }
+//                onSongStarted = { songId ->
+//                    viewModel.updateLastPlayed(songId)
+//                }
             )
         }
     }

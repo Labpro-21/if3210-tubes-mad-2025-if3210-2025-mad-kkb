@@ -14,16 +14,23 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.kkb.purrytify.viewmodel.ProfileStatsUiState
 import com.kkb.purrytify.viewmodel.ProfileUiState
 import com.kkb.purrytify.components.SoundCapsule
@@ -123,13 +130,12 @@ fun ProfileScreen(
                         .height(100.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Avatar
-                    Icon(
-                        imageVector = Icons.Filled.Person,
-                        contentDescription = "Profile",
-                        modifier = Modifier.size(96.dp),
-                        tint = Color.White
+                    // Profile Avatar with photo
+                    ProfileAvatar(
+                        profilePhotoPath = uiState.profile?.profilePhoto,
+                        modifier = Modifier.size(96.dp)
                     )
+
                     Icon(
                         imageVector = Icons.Filled.Edit,
                         contentDescription = "Edit",
@@ -200,74 +206,109 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(40.dp))
 
-            if (statsState.monthlyCapsules.isEmpty()) {
-                // No capsules to show
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No listening history yet",
-                        color = Color.Gray,
-                        fontSize = 16.sp
-                    )
-                }
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Your Sound Capsule",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
+                if (statsState.monthlyCapsules.isEmpty()) {
+                    // No capsules to show
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No listening history yet",
+                            color = Color.Gray,
+                            fontSize = 16.sp
+                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Your Sound Capsule",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
 
-                    IconButton(onClick = {
-                        Toast.makeText(context, "Generating PDF...", Toast.LENGTH_SHORT).show()
-                        PdfExporter.exportSoundCapsuleToPdf(context, statsState) { uri ->
-                            if (uri != null) {
-                                PdfExporter.sharePdf(context, uri)
-                            } else {
-                                // Run on main thread
-                                (context as? android.app.Activity)?.runOnUiThread {
-                                    Toast.makeText(context, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                        IconButton(onClick = {
+                            Toast.makeText(context, "Generating PDF...", Toast.LENGTH_SHORT).show()
+                            PdfExporter.exportSoundCapsuleToPdf(context, statsState) { uri ->
+                                if (uri != null) {
+                                    PdfExporter.sharePdf(context, uri)
+                                } else {
+                                    // Run on main thread
+                                    (context as? android.app.Activity)?.runOnUiThread {
+                                        Toast.makeText(context, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                             }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Download",
+                                tint = Color.White
+                            )
                         }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = "Download",
-                            tint = Color.White
+                    }
+
+                    statsState.monthlyCapsules.forEachIndexed { index, capsule->
+                        SoundCapsule(
+                            monthYear = capsule.month,
+                            minutesListened = capsule.totalTimeListened,
+                            topArtist = capsule.topArtist,
+                            topSong = capsule.topSong,
+                            dayStreakSong = capsule.dayStreakSong,
+                            onShare = { /* Implement sharing functionality */ },
+                            monthIndex = index,
+                            navController = navController
                         )
+
+                        Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
 
-                statsState.monthlyCapsules.forEachIndexed { index, capsule->
-                    SoundCapsule(
-                        monthYear = capsule.month,
-                        minutesListened = capsule.totalTimeListened,
-                        topArtist = capsule.topArtist,
-                        topSong = capsule.topSong,
-                        dayStreakSong = capsule.dayStreakSong,
-                        onShare = { /* Implement sharing functionality */ },
-                        monthIndex = index,
-                        navController = navController
-                    )
-                    
-                    Spacer(modifier = Modifier.height(32.dp))
-                }
             }
-
         }
     }
 }
+
+@Composable
+fun ProfileAvatar(
+    profilePhotoPath: String?,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+
+    if (!profilePhotoPath.isNullOrEmpty()) {
+        val token = remember { TokenStorage.getAccessToken(context) }
+
+        AsyncImage(
+            model = ImageRequest.Builder(context)
+                .data("http://34.101.226.132:3000/uploads/profile-picture/$profilePhotoPath")
+                .addHeader("Authorization", "Bearer $token")
+                .build(),
+            contentDescription = "Profile Photo",
+            modifier = modifier
+                .clip(CircleShape)
+                .background(Color.Gray.copy(alpha = 0.3f)),
+            contentScale = ContentScale.Crop,
+            fallback = rememberVectorPainter(image = Icons.Filled.Person),
+            error = rememberVectorPainter(image = Icons.Filled.Person)
+        )
+    } else {
+        // Default avatar when no photo is available
+        Icon(
+            imageVector = Icons.Filled.Person,
+            contentDescription = "Default Profile",
+            modifier = modifier,
+            tint = Color.White
+        )
+    }
 }
+
 @Composable
 private fun ProfileContent(
     navController: NavController,
@@ -295,13 +336,12 @@ private fun ProfileContent(
                 .height(100.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Avatar
-            Icon(
-                imageVector = Icons.Filled.Person,
-                contentDescription = "Profile",
-                modifier = Modifier.size(96.dp),
-                tint = Color.White
+            // Profile Avatar with photo
+            ProfileAvatar(
+                profilePhotoPath = uiState.profile?.profilePhoto,
+                modifier = Modifier.size(96.dp)
             )
+
             Icon(
                 imageVector = Icons.Filled.Edit,
                 contentDescription = "Edit",
