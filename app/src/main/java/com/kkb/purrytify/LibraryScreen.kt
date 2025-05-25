@@ -33,10 +33,12 @@ import com.kkb.purrytify.viewmodel.ChartViewModel
 import com.kkb.purrytify.viewmodel.LikeViewModel
 import com.kkb.purrytify.viewmodel.SongViewModel
 import kotlinx.coroutines.launch
+import com.kkb.purrytify.util.CheckNotificationPermission
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibraryScreen(navController: NavController, currentRoute: String) {
+fun LibraryScreen(navController: NavController, currentRoute: String){
+    CheckNotificationPermission()
     val viewModel = hiltViewModel<SongViewModel>()
     val chartViewModel: ChartViewModel = hiltViewModel()
     val likeviewModel = hiltViewModel<LikeViewModel>()
@@ -51,13 +53,17 @@ fun LibraryScreen(navController: NavController, currentRoute: String) {
     val currentSong by MediaPlayerManager.currentSong.collectAsState()
     val isPlaying by MediaPlayerManager.isPlaying.collectAsState()
 
+
+
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    val displayedSongs = if (selectedTab == "Liked") {
-        songs.filter { it.isLiked }
-    } else {
-        songs
+    val displayedSongs = when (selectedTab) {
+        "Liked" -> songs.filter { it.isLiked }
+        "Downloaded" -> songs.filter { 
+            it.filePath.startsWith("https://") || it.filePath.startsWith("http://") 
+        }
+        else -> songs
     }
 
     if (isLandscape) {

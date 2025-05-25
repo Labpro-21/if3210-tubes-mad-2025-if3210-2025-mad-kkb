@@ -15,7 +15,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import javax.inject.Inject
+import android.util.Log
+import com.kkb.purrytify.data.dao.DailyTimeListened
 
 data class ProfileUiState(
     val isLoading: Boolean = false,
@@ -23,11 +27,21 @@ data class ProfileUiState(
     val error: String? = null
 )
 
+data class MonthlySoundCapsule(
+    val month: String,
+    val topSong: TopSongTimeListened?,
+    val topSongs: List<TopSongTimeListened> = emptyList(),
+    val topArtist: TopArtistTimeListened?,
+    val topArtists: List<TopArtistTimeListened> = emptyList(),
+    val totalTimeListened: Long,
+    val dailyTime: List<DailyTimeListened> = emptyList(),
+    val totalArtistsListened: Int,
+    val totalSongsListened: Int,
+    val dayStreakSong: DayStreakSongInfo? = null,
+)
+
 data class ProfileStatsUiState(
-    val topSong: TopSongTimeListened? = null,
-    val topArtist: TopArtistTimeListened? = null,
-    val totalTimeListened: Long = 0L,
-    val dayStreakSong: DayStreakSongInfo? = null
+    val monthlyCapsules: List<MonthlySoundCapsule> = emptyList()
 )
 
 @HiltViewModel
@@ -43,6 +57,9 @@ class ProfileViewModel @Inject constructor(
     val statsState: StateFlow<ProfileStatsUiState> = _statsState
 
     private var cachedProfile: ProfileResponse? = null
+
+    private val monthYearFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())
+    val currentMonthYear: String = monthYearFormatter.format(LocalDate.now())
 
     fun fetchProfile(token: String, forceRefresh: Boolean = false) {
         if (_uiState.value.isLoading) return
@@ -70,21 +87,51 @@ class ProfileViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(error = null)
     }
 
-    fun fetchProfileStats(userId: Int) {
+    fun fetchMonthlySoundCapsules(userId: Int) {
         viewModelScope.launch(Dispatchers.IO) {
-            val topSong = userSongDao.getTopSongByTimeListened(userId)
-            val topArtist = userSongDao.getTopArtistsByTimeListened(userId, 1).firstOrNull()
-            val totalTime = userSongDao.getUserTotalTimeListened(userId) ?: 0L
-            val dayStreakSong = getSongWithHighestDayStreak(userId)
+            // Get current and previous months (up to 6 months)
+            val formatter = DateTimeFormatter.ofPattern("MM-yyyy")
+            val monthsCapsules = mutableListOf<MonthlySoundCapsule>()
+
+            for (i in 0..5) {
+                val monthDate = LocalDate.now().minusMonths(i.toLong())
+                val monthYearStr = formatter.format(monthDate)
+                val displayMonthYear = monthYearFormatter.format(monthDate)
+
+                val topSongs = userSongDao.getTopSongByTimeListenedForMonth(userId, monthYearStr)
+                val topArtists = userSongDao.getTopArtistsByTimeListenedForMonth(userId, monthYearStr)
+                val totalTime = userSongDao.getUserTotalTimeListenedForMonth(userId, monthYearStr) ?: 0L
+                val dailyTime = userSongDao.getDailyTimeListenedInMonth(userId,monthYearStr)
+                val dayStreakSong = getSongWithHighestDayStreak(userId)
+                Log.d("topArtists", topArtists.toString())
+                if (totalTime > 0) {
+                    monthsCapsules.add(
+                        MonthlySoundCapsule(
+                            month = displayMonthYear,
+                            topSong = topSongs.firstOrNull(),
+                            topSongs = topSongs,
+                            topArtist = topArtists.firstOrNull(),
+                            topArtists = topArtists,
+                            totalTimeListened = totalTime,
+                            dailyTime = dailyTime,
+                            totalArtistsListened = topArtists.size,
+                            totalSongsListened = topSongs.size,
+                            dayStreakSong = getSongWithHighestDayStreak(userId)
+                        )
+                    )
+                }
+            }
+
             withContext(Dispatchers.Main) {
-                _statsState.value = ProfileStatsUiState(
-                    topSong = topSong,
-                    topArtist = topArtist,
-                    totalTimeListened = totalTime,
-                    dayStreakSong = dayStreakSong
+                _statsState.value = _statsState.value.copy(
+                    monthlyCapsules = monthsCapsules
                 )
             }
         }
+    }
+
+    fun fetchProfileStats(userId: Int) {
+        fetchMonthlySoundCapsules(userId)
     }
 
     private fun calculateDayStreak(dates: List<LocalDate>): Int {

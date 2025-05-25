@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
@@ -24,8 +25,12 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.kkb.purrytify.viewmodel.ProfileStatsUiState
 import com.kkb.purrytify.viewmodel.ProfileUiState
+import com.kkb.purrytify.components.SoundCapsule
 import com.kkb.purrytify.viewmodel.ProfileViewModel
 import com.kkb.purrytify.viewmodel.SongViewModel
+import java.time.format.DateTimeFormatter
+import java.time.LocalDate
+import java.util.*
 
 @Composable
 fun ProfileScreen(
@@ -85,7 +90,8 @@ fun ProfileScreen(
                 listenedSongs = listenedSongs
             )
         }
-    }else {
+    }
+    else {
         Scaffold(
             containerColor = Color.Black,
             bottomBar = {
@@ -191,124 +197,62 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(40.dp))
 
-                Text(
-                    text = "Your Sound Capsule",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    modifier = Modifier.padding(16.dp) // Set margin here
-                )
-
-                Column(
+            if (statsState.monthlyCapsules.isEmpty()) {
+                // No capsules to show
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    // Time Listened
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
-                            .padding(16.dp)
-                    ) {
-                        Column {
-                            Text(
-                                text = "Time Listened",
-                                color = Color.Gray,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                text = formatTime(statsState.totalTimeListened),
-                                color = Color.White,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
+                    Text(
+                        text = "No listening history yet",
+                        color = Color.Gray,
+                        fontSize = 16.sp
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Your Sound Capsule",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Top Artist & Top Song
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // Top Artist
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
-                                .padding(16.dp)
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "Top Artist",
-                                    color = Color.Gray,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    text = statsState.topArtist?.artist ?: "-",
-                                    color = Color.White,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                        // Top Song
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
-                                .padding(16.dp)
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "Top Song",
-                                    color = Color.Gray,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    text = statsState.topSong?.title ?: "-",
-                                    color = Color.White,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
-                            .padding(16.dp)
-                    ) {
-                        Column {
-                            Text(
-                                text = "Day Streak",
-                                color = Color.Gray,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            val dayStreakSong = statsState.dayStreakSong
-                            Text(
-                                text = "Day Streak: ${dayStreakSong?.dayStreak ?: 0} (${dayStreakSong?.title ?: "-"})",
-                                color = Color.White,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                    IconButton(onClick = {}) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Download",
+                            tint = Color.White
+                        )
                     }
                 }
+
+                statsState.monthlyCapsules.forEachIndexed { index, capsule->
+                    SoundCapsule(
+                        monthYear = capsule.month,
+                        minutesListened = capsule.totalTimeListened,
+                        topArtist = capsule.topArtist,
+                        topSong = capsule.topSong,
+                        dayStreakSong = capsule.dayStreakSong,
+                        onShare = { /* Implement sharing functionality */ },
+                        monthIndex = index,
+                        navController = navController
+                    )
+                    
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
             }
+
         }
     }
 }
-
+}
 @Composable
 private fun ProfileContent(
     modifier: Modifier = Modifier,
@@ -438,7 +382,7 @@ private fun ProfileContent(
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = formatTime(statsState.totalTimeListened),
+                        text = formatTime(statsState.monthlyCapsules[0].totalTimeListened),
                         color = Color.White,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
@@ -468,7 +412,7 @@ private fun ProfileContent(
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = statsState.topArtist?.artist ?: "-",
+                            text = statsState.monthlyCapsules[0].topArtist?.artist ?: "-",
                             color = Color.White,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
@@ -490,7 +434,7 @@ private fun ProfileContent(
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = statsState.topSong?.title ?: "-",
+                            text = statsState.monthlyCapsules[0].topSong?.title ?: "-",
                             color = Color.White,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
@@ -513,7 +457,7 @@ private fun ProfileContent(
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold
                     )
-                    val dayStreakSong = statsState.dayStreakSong
+                    val dayStreakSong = statsState.monthlyCapsules[0].dayStreakSong
                     Text(
                         text = "Day Streak: ${dayStreakSong?.dayStreak ?: 0} (${dayStreakSong?.title ?: "-"})",
                         color = Color.White,
