@@ -2,6 +2,7 @@ package com.kkb.purrytify
 
 import android.content.Context
 import android.content.res.Configuration
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -90,6 +91,7 @@ fun BottomNavigationBar(
                             onClick = {
                                 if (!selected) {
                                     navController.navigate(item.route)
+                                    Log.d("Navigation", "Clicked route: ${item.route}")
                                 }
                             },
                             onLongPress = { showProfileMenu = true }
@@ -118,6 +120,7 @@ fun BottomNavigationBar(
                         onClick = {
                             if (!selected) {
                                 navController.navigate(item.route)
+                                Log.d("Navigation", "Clicked route: ${item.route}")
                             }
                         }
                     )
