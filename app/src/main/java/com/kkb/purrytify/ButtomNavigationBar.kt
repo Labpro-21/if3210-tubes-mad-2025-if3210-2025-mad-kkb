@@ -77,26 +77,6 @@ fun BottomNavigationBar(
             items.forEachIndexed { index, item ->
                 val selected = currentRoute == item.route
 
-//                if (index == 1) {
-//                    // Scan QR Button for landscape
-//                    ScanQrMenuButton(
-//                        onClick = {
-//                            Log.d("Navigation", "Clicked route: ${item.route}")
-//                            if (!selected) {
-//                                Log.d("Navigation", "Clicked route: ${item.route}")
-//                                navController.navigate(item.route)
-//                                Log.d("Navigation", "Clicked route: ${item.route}")
-//                            }
-//                        }
-////                        onScanResult = { scannedUrl ->
-////                            val songId = scannedUrl.substringAfterLast("/").toIntOrNull()
-////                            if (songId != null) {
-////                                navController.navigate("track-link/$songId")
-////                                Log.d("Navigation", "Scanned QR, navigating to track-link/$songId")
-////                            }
-////                        }
-//                    )
-//                }
 
                 if (item is BottomNavItem.Profile) {
                     Box {
@@ -106,7 +86,7 @@ fun BottomNavigationBar(
                             selected = selected,
                             onClick = {
                                 if (!selected) {
-                                    navController.navigate("qr-scan")
+                                    navController.navigate(item.route)
                                     Log.d("Navigation", "Clicked route: ${item.route}")
                                 }
                             },
@@ -203,27 +183,6 @@ fun BottomNavigationBar(
         ) {
             items.forEachIndexed { index, item ->
                 val selected = currentRoute == item.route
-                // Add the Scan QR button after the Library item
-//                if (index == 1) {
-//                    // Scan QR Menu Button
-//                    ScanQrMenuButton(
-//                        onClick = {
-//                            if (!selected) {
-//                                navController.navigate(item.route)
-//                                Log.d("Navigation", "Clicked route: ${item.route}")
-//                            }
-//                        }
-////                        onScanResult = { scannedUrl ->
-////                            // Example: Extract songId from the URL and navigate
-////                            val songId = scannedUrl.substringAfterLast("/").toIntOrNull()
-////                            if (songId != null) {
-////                                navController.navigate("track-link/$songId")
-////                            } else {
-////                                // Handle invalid QR (show snackbar, toast, etc.)
-////                            }
-////                        }
-//                    )
-//                }
                 if (item is BottomNavItem.Profile) {
                     NavigationBarItem(
                         icon = {
@@ -350,13 +309,17 @@ private fun NavigationRow(
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp)
-            .clickable(onClick = onClick)
             .then(
                 if (onLongPress != null) {
                     Modifier.pointerInput(Unit) {
-                        detectTapGestures(onLongPress = { onLongPress() })
+                        detectTapGestures(
+                            onTap = { onClick() },
+                            onLongPress = { onLongPress() }
+                        )
                     }
-                } else Modifier
+                } else {
+                    Modifier.clickable(onClick = onClick)
+                }
             )
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically

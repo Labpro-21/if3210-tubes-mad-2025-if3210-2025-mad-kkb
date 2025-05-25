@@ -62,12 +62,22 @@ fun LibraryScreen(navController: NavController, currentRoute: String) {
 
     if (isLandscape) {
         Row(Modifier.fillMaxSize()) {
-            // Sidebar Navigation
-            BottomNavigationBar(
-                navController = navController,
-                currentRoute = currentRoute,
-                context = context
-            )
+            // --- Sidebar Navigation ---
+            Column(
+                modifier = Modifier
+                    .width(130.dp)
+                    .fillMaxHeight()
+                    .background(Color(0xFF181818))
+                    .padding(vertical = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                BottomNavigationBar(
+                    navController = navController,
+                    currentRoute = currentRoute,
+                    context = context
+                )
+            }
 
             Divider(
                 color = Color.Gray.copy(alpha = 0.3f),

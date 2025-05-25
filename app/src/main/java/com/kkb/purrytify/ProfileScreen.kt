@@ -1,6 +1,7 @@
 package com.kkb.purrytify
 
 import android.content.Context
+import android.content.res.Configuration
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -13,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -20,6 +22,8 @@ import androidx.compose.ui.unit.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.kkb.purrytify.viewmodel.ProfileStatsUiState
+import com.kkb.purrytify.viewmodel.ProfileUiState
 import com.kkb.purrytify.viewmodel.ProfileViewModel
 import com.kkb.purrytify.viewmodel.SongViewModel
 
@@ -37,6 +41,9 @@ fun ProfileScreen(
     val likedSongs by songViewModel.likedSongsCount.collectAsState()
     val listenedSongs by songViewModel.listenedSongsCount.collectAsState()
 
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
     val ctx = LocalContext.current
 
     // Fetch profile on first composition
@@ -53,220 +60,466 @@ fun ProfileScreen(
         }
     }
 
-    Scaffold(
-        containerColor = Color.Black,
-        bottomBar = {
+    if (isLandscape) {
+        Row(Modifier.fillMaxSize()) {
+            // Sidebar Navigation
             BottomNavigationBar(
                 navController = navController,
                 currentRoute = currentRoute,
                 context = context
             )
+
+            Divider(
+                color = Color.Gray.copy(alpha = 0.3f),
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(1.dp)
+            )
+
+            // Main profile content
+            ProfileContent(
+                uiState = uiState,
+                statsState = statsState,
+                totalSongs = totalSongs,
+                likedSongs = likedSongs,
+                listenedSongs = listenedSongs
+            )
         }
-    ) { innerPadding ->
+    }else {
+        Scaffold(
+            containerColor = Color.Black,
+            bottomBar = {
+                BottomNavigationBar(
+                    navController = navController,
+                    currentRoute = currentRoute,
+                    context = context
+                )
+            }
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(Color(0xFF003838), Color.Black)
+                        )
+                    )
+                    .padding(top = 32.dp, bottom = 16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Avatar
+                    Icon(
+                        imageVector = Icons.Filled.Person,
+                        contentDescription = "Profile",
+                        modifier = Modifier.size(96.dp),
+                        tint = Color.White
+                    )
+                    Icon(
+                        imageVector = Icons.Filled.Edit,
+                        contentDescription = "Edit",
+                        modifier = Modifier
+                            .offset(x = 40.dp, y = (35).dp)
+                            .size(20.dp)
+                            .background(Color.White, shape = CircleShape)
+                            .padding(4.dp),
+                        tint = Color.Black
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                when {
+                    uiState.isLoading -> {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
+                    }
+
+                    uiState.error != null -> {
+                        Text(
+                            text = uiState.error ?: "Unknown error",
+                            color = Color.Red,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
+                    }
+
+                    else -> {
+                        Text(
+                            text = uiState.profile?.username ?: "Loading...",
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
+                        Text(
+                            text = uiState.profile?.location ?: "Loading...",
+                            color = Color.Gray,
+                            fontSize = 14.sp,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Button(
+                    onClick = { /* Edit profile */ },
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text("Edit Profile")
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    ProfileStat(totalSongs.toString(), "SONGS")
+                    ProfileStat(likedSongs.toString(), "LIKED")
+                    ProfileStat(listenedSongs.toString(), "LISTENED")
+                }
+
+                Spacer(modifier = Modifier.height(40.dp))
+
+                Text(
+                    text = "Your Sound Capsule",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    modifier = Modifier.padding(16.dp) // Set margin here
+                )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    // Time Listened
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
+                            .padding(16.dp)
+                    ) {
+                        Column {
+                            Text(
+                                text = "Time Listened",
+                                color = Color.Gray,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = formatTime(statsState.totalTimeListened),
+                                color = Color.White,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Top Artist & Top Song
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Top Artist
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
+                                .padding(16.dp)
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "Top Artist",
+                                    color = Color.Gray,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = statsState.topArtist?.artist ?: "-",
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        // Top Song
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
+                                .padding(16.dp)
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "Top Song",
+                                    color = Color.Gray,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = statsState.topSong?.title ?: "-",
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
+                            .padding(16.dp)
+                    ) {
+                        Column {
+                            Text(
+                                text = "Day Streak",
+                                color = Color.Gray,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            val dayStreakSong = statsState.dayStreakSong
+                            Text(
+                                text = "Day Streak: ${dayStreakSong?.dayStreak ?: 0} (${dayStreakSong?.title ?: "-"})",
+                                color = Color.White,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileContent(
+    modifier: Modifier = Modifier,
+    uiState: ProfileUiState,
+    statsState: ProfileStatsUiState,
+    totalSongs: Int,
+    likedSongs: Int,
+    listenedSongs: Int
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color(0xFF003838), Color.Black)
+                )
+            )
+            .padding(top = 32.dp, bottom = 16.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // Avatar
+            Icon(
+                imageVector = Icons.Filled.Person,
+                contentDescription = "Profile",
+                modifier = Modifier.size(96.dp),
+                tint = Color.White
+            )
+            Icon(
+                imageVector = Icons.Filled.Edit,
+                contentDescription = "Edit",
+                modifier = Modifier
+                    .offset(x = 40.dp, y = (35).dp)
+                    .size(20.dp)
+                    .background(Color.White, shape = CircleShape)
+                    .padding(4.dp),
+                tint = Color.Black
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        when {
+            uiState.isLoading -> {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+            uiState.error != null -> {
+                Text(
+                    text = uiState.error ?: "Unknown error",
+                    color = Color.Red,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+            else -> {
+                Text(
+                    text = uiState.profile?.username ?: "Loading...",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+                Text(
+                    text = uiState.profile?.location ?: "Loading...",
+                    color = Color.Gray,
+                    fontSize = 14.sp,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Button(
+            onClick = { /* Edit profile */ },
+            shape = RoundedCornerShape(20.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Text("Edit Profile")
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            ProfileStat(totalSongs.toString(), "SONGS")
+            ProfileStat(likedSongs.toString(), "LIKED")
+            ProfileStat(listenedSongs.toString(), "LISTENED")
+        }
+
+        Spacer(modifier = Modifier.height(40.dp))
+
+        Text(
+            text = "Your Sound Capsule",
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            modifier = Modifier.padding(16.dp)
+        )
+
         Column(
             modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(Color(0xFF003838), Color.Black)
-                    )
-                )
-                .padding(top = 32.dp, bottom = 16.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
+            // Time Listened
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp),
-                contentAlignment = Alignment.Center
+                    .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
+                    .padding(16.dp)
             ) {
-                // Avatar
-                Icon(
-                    imageVector = Icons.Filled.Person,
-                    contentDescription = "Profile",
-                    modifier = Modifier.size(96.dp),
-                    tint = Color.White
-                )
-                Icon(
-                    imageVector = Icons.Filled.Edit,
-                    contentDescription = "Edit",
-                    modifier = Modifier
-                        .offset(x = 40.dp, y = (35).dp)
-                        .size(20.dp)
-                        .background(Color.White, shape = CircleShape)
-                        .padding(4.dp),
-                    tint = Color.Black
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            when {
-                uiState.isLoading -> {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
-                }
-                uiState.error != null -> {
+                Column {
                     Text(
-                        text = uiState.error ?: "Unknown error",
-                        color = Color.Red,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
-                }
-                else -> {
-                    Text(
-                        text = uiState.profile?.username ?: "Loading...",
-                        color = Color.White,
-                        fontSize = 20.sp,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
-                    Text(
-                        text = uiState.profile?.location ?: "Loading...",
+                        text = "Time Listened",
                         color = Color.Gray,
                         fontSize = 14.sp,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = formatTime(statsState.totalTimeListened),
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = { /* Edit profile */ },
-                shape = RoundedCornerShape(20.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            ) {
-                Text("Edit Profile")
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
+            // Top Artist & Top Song
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                ProfileStat(totalSongs.toString(), "SONGS")
-                ProfileStat(likedSongs.toString(), "LIKED")
-                ProfileStat(listenedSongs.toString(), "LISTENED")
+                // Top Artist
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
+                        .padding(16.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Top Artist",
+                            color = Color.Gray,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = statsState.topArtist?.artist ?: "-",
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                // Top Song
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
+                        .padding(16.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Top Song",
+                            color = Color.Gray,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = statsState.topSong?.title ?: "-",
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
+            Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(40.dp))
-
-            Text(
-                text = "Your Sound Capsule",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                modifier = Modifier.padding(16.dp) // Set margin here
-            )
-
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
+                    .padding(16.dp)
             ) {
-                // Time Listened
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
-                        .padding(16.dp)
-                ) {
-                    Column {
-                        Text(
-                            text = "Time Listened",
-                            color = Color.Gray,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = formatTime(statsState.totalTimeListened),
-                            color = Color.White,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Top Artist & Top Song
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Top Artist
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
-                            .padding(16.dp)
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "Top Artist",
-                                color = Color.Gray,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                text = statsState.topArtist?.artist ?: "-",
-                                color = Color.White,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                    // Top Song
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
-                            .padding(16.dp)
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "Top Song",
-                                color = Color.Gray,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                text = statsState.topSong?.title ?: "-",
-                                color = Color.White,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
-                        .padding(16.dp)
-                ) {
-                    Column {
-                        Text(
-                            text = "Day Streak",
-                            color = Color.Gray,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        val dayStreakSong = statsState.dayStreakSong
-                        Text(
-                            text = "Day Streak: ${dayStreakSong?.dayStreak ?: 0} (${dayStreakSong?.title ?: "-"})",
-                            color = Color.White,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                Column {
+                    Text(
+                        text = "Day Streak",
+                        color = Color.Gray,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    val dayStreakSong = statsState.dayStreakSong
+                    Text(
+                        text = "Day Streak: ${dayStreakSong?.dayStreak ?: 0} (${dayStreakSong?.title ?: "-"})",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
