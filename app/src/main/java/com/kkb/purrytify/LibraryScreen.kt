@@ -238,85 +238,77 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
                 }
             }
         ) { innerPadding ->
-            LazyColumn(
+            Column(
                 modifier = Modifier
                     .padding(innerPadding)
                     .background(Color.Black)
                     .fillMaxSize()
-                    .padding(horizontal = 16.dp)
             ) {
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .padding(horizontal = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Library", color = Color.White, fontSize = 20.sp)
+                    IconButton(
+                        onClick = {
+                            Log.d("Library", "Add button clicked")
+                            coroutineScope.launch {
+                                showBottomSheet = true
+                                sheetState.show()
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add",
+                            tint = Color.White
+                        )
+                    }
+                }
+                if (songs.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("No songs yet", color = Color.Gray, fontSize = 16.sp)
+                    }
+                } else {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(60.dp)
-                            .padding(horizontal = 10.dp),
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.Start
                     ) {
-                        Text("Library", color = Color.White, fontSize = 20.sp)
-                        IconButton(
-                            onClick = {
-                                Log.d("Library", "Add button clicked")
-                                coroutineScope.launch {
-                                    showBottomSheet = true
-                                    sheetState.show()
+                        FilterButton("All", selectedTab == "All") { selectedTab = "All" }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        FilterButton("Liked", selectedTab == "Liked") { selectedTab = "Liked" }
+                    }
+
+                    AndroidView(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        factory = { ctx ->
+                            RecyclerView(ctx).apply {
+                                layoutManager = LinearLayoutManager(ctx)
+                                adapter = SongAdapter(displayedSongs) { song ->
+                                    Log.d("Library", "Navigating to track/${song.songId}")
+                                    navController.navigate("track/${song.songId}")
                                 }
                             }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Add",
-                                tint = Color.White
-                            )
+                        },
+                        update = { recyclerView ->
+                            (recyclerView.adapter as? SongAdapter)?.updateList(displayedSongs)
                         }
-                    }
-                }
-
-                if (songs.isEmpty()) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("No songs yet", color = Color.Gray, fontSize = 16.sp)
-                        }
-                    }
-                } else {
-                    item {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 10.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Start
-                        ) {
-                            FilterButton("All", selectedTab == "All") { selectedTab = "All" }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            FilterButton("Liked", selectedTab == "Liked") { selectedTab = "Liked" }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            FilterButton("Downloaded", selectedTab == "Downloaded") { selectedTab = "Downloaded" }
-                        }
-
-                        AndroidView(
-                            modifier = Modifier.fillParentMaxHeight(),
-                            factory = { ctx ->
-                                RecyclerView(ctx).apply {
-                                    layoutManager = LinearLayoutManager(ctx)
-                                    adapter = SongAdapter(displayedSongs) { song ->
-                                        Log.d("Library", "Navigating to track/${song.songId}")
-                                        navController.navigate("track/${song.songId}")
-                                    }
-                                }
-                            },
-                            update = { recyclerView ->
-                                (recyclerView.adapter as? SongAdapter)?.updateList(displayedSongs)
-                            }
-                        )
-                    }
+                    )
                 }
             }
         }
