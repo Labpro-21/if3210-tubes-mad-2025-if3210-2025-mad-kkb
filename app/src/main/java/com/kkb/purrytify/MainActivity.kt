@@ -85,9 +85,6 @@ class MainActivity : ComponentActivity() {
                         composable("library") {
                             LibraryScreen(navController = navController, currentRoute = "library")
                         }
-                        composable("home") {
-                            HomeScreen(navController = navController, currentRoute = "home")
-                        }
 
                         composable(
                             "top-artist/{monthIndex}",
@@ -124,9 +121,20 @@ class MainActivity : ComponentActivity() {
                                 monthIndex = monthIndex
                             )
                         }
-//                        composable("qr-scan"){
-//                            scan
-//                        }
+                        composable("qr_scanner"){
+                            QrScannerScreen(
+                                onResult = { code ->
+                                    // Handle result, e.g. extract songId and navigate
+                                    val songId = code.substringAfterLast("/").toIntOrNull()
+                                    if (songId != null) {
+                                        navController.navigate("track-link/$songId")
+                                    } else {
+                                        navController.popBackStack() // or show an error
+                                    }
+                                },
+                                onCancel = { navController.popBackStack() }
+                            )
+                        }
 
                         composable(
                             "track-link/{songId}",
