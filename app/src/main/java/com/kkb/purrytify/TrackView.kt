@@ -45,7 +45,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 @Composable
 
 fun TrackScreen(
-
     navController: NavController,
     viewModel: SongViewModel = hiltViewModel()
 ) {
@@ -68,23 +67,28 @@ fun TrackScreen(
         return
     }
 
-    val song = currentSong!!
-    
+    val song = MediaPlayerManager.getCurrentSong() ?: currentSong!!
     LaunchedEffect(Unit) {
         val currentPlayingSong = MediaPlayerManager.getCurrentSong()
-        if (currentPlayingSong?.songId != song.songId || !isPlayerPlaying) {
-            Log.d("tess", song.toString())
-            val uri = Uri.parse(song.filePath)
-            val isRemote = song.filePath.startsWith("http://") || song.filePath.startsWith("https://")
+        var songToPlay = song
+        
+        if (currentPlayingSong?.songId != songToPlay.songId || !isPlayerPlaying) {
+            Log.d("tess(song)", songToPlay.toString())
+            Log.d("tess(curentsong)", currentPlayingSong.toString())
+
+            if (currentPlayingSong != null) {
+                songToPlay = currentPlayingSong
+            }
+            
+            val uri = Uri.parse(songToPlay.filePath)
+            val isRemote = songToPlay.filePath.startsWith("http://") || songToPlay.filePath.startsWith("https://")
+            
             MediaPlayerManager.play(
-                song = song,
+                song = songToPlay,
                 uri = if (isRemote) null else uri,
                 contentResolver = if (isRemote) null else contentResolver,
                 isRemote = isRemote,
-                context = context,
-//                onSongStarted = { songId ->
-//                    viewModel.updateLastPlayed(songId)
-//                }
+                context = context
             )
         }
     }

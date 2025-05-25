@@ -75,7 +75,7 @@ object MediaPlayerManager {
         try {
 
             val isResuming = _currentSong.value?.songId == song.songId && currentPosition > 0
-//            Log.d("playingsong", song.toString())
+            Log.d("playingsong", song.toString())
             if (isResuming) {
                 mediaPlayer?.let {
                     if (!it.isPlaying) {
@@ -268,5 +268,5 @@ object MediaPlayerManager {
 
     fun getPlayer(): MediaPlayer? = mediaPlayer
 
-    fun getCurrentSong(): UserSong? = _currentSong.value
+    fun getCurrentSong(): UserSong? = songList[currentIndex]
 }

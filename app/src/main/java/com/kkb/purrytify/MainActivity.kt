@@ -45,13 +45,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        MediaPlayerManager.setSongRepository(songRepository)
-
         val context = this
         lifecycleScope.launch {
             val loggedIn = TokenStorage.refreshAccessTokenIfNeeded(context, apiService)
             Log.d("TokenStorage", "loggedIn: $loggedIn")
-
+            MediaPlayerManager.setSongRepository(songRepository)
             // Handle deep link
             val data: Uri? = intent?.data
             val deepLinkSongId = if (data?.scheme == "purrytify" && data.host == "song") {
@@ -185,30 +183,33 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(
                         "track/{songId}",
-                        arguments = listOf(navArgument("songId") { type = NavType.IntType })
-                    ) { backStackEntry ->
-                        val songId = backStackEntry.arguments?.getInt("songId")
-                        val viewModel: SongViewModel = hiltViewModel()
-                        val selectedSong = viewModel.getSongById(songId)
-                        val songs by viewModel.userSongList.collectAsState()
-                        selectedSong?.let { song ->
-                            val index = songs.indexOfFirst { it.songId == song.id }
-                            Log.d("idsong", "id: $index")
-                            Log.d("songids", "$songs")
-                            if (index != -1) {
-                                // Set the playlist in MediaPlayerManager
-                                LaunchedEffect(songs, index) {
-                                    MediaPlayerManager.setPlaylist(songs, index)
-                                }
-                                TrackScreen(
-                                    navController = navController,
-                                    viewModel = viewModel
-                                )
-                            } else {
-                                Log.e("idsong", "Song not found in the list")
+                            arguments = listOf(navArgument("songId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val songId = backStackEntry.arguments?.getInt("songId")
+                            val viewModel: SongViewModel = hiltViewModel()
+                            val selectedSong = viewModel.getSongById(songId)
+                            val songs by viewModel.userSongList.collectAsState()
+                            selectedSong?.let { song ->
+                                val index = songs.indexOfFirst { it.songId == song.id }
+                                Log.d("trackSong", "id: $index")
+                                Log.d("trackSong", "$songs")
+                                if (index != -1) {
+                                    // Set the playlist in MediaPlayerManager
+                                    LaunchedEffect(songs, index) {
+                                        MediaPlayerManager.setPlaylist(songs, index)
+                                        Log.d("track route",
+                                            MediaPlayerManager.getCurrentSong().toString()
+                                        )
+                                    }
+                                    TrackScreen(
+                                        navController = navController,
+                                        viewModel = viewModel
+                                    )
+                                } else {
+                                    Log.e("idsong", "Song not found in the list")
+                                    }
                                 }
                             }
-                        }
 
                     composable(
                         "track_chart/{chartType}/{index}",
@@ -223,6 +224,8 @@ class MainActivity : ComponentActivity() {
 
                         val chartSongs by chartViewModel.chartSongs.collectAsState()
                         val isLoading by chartViewModel.isLoading.collectAsState()
+
+                        Log.d("trackSong", "id: $index")
 
                         LaunchedEffect(chartType) {
                             chartViewModel.fetchChart(chartType)

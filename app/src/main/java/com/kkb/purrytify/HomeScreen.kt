@@ -262,7 +262,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                 contentPadding = PaddingValues(vertical = 24.dp)
             ) {
                 item {
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text("Rekomendasi untukmu", color = Color.White, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(8.dp))
                     if (recommendedSongs.isEmpty()) {
@@ -279,7 +279,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                             })
                         }
                     }
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
                 item {
                     Text("Charts", color = Color.White, fontWeight = FontWeight.Bold)
@@ -330,7 +330,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                     }
                 }
                 item {
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text("New songs", color = Color.White, fontWeight = FontWeight.Bold)
                     LazyRow {
                         items(newSongs.size) { index ->
