@@ -2,6 +2,7 @@ package com.kkb.purrytify
 
 import android.content.Context
 import android.content.res.Configuration
+import android.widget.Toast
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -26,6 +27,7 @@ import androidx.navigation.compose.rememberNavController
 import com.kkb.purrytify.viewmodel.ProfileStatsUiState
 import com.kkb.purrytify.viewmodel.ProfileUiState
 import com.kkb.purrytify.components.SoundCapsule
+import com.kkb.purrytify.util.PdfExporter
 import com.kkb.purrytify.viewmodel.ProfileViewModel
 import com.kkb.purrytify.viewmodel.SongViewModel
 import java.time.format.DateTimeFormatter
@@ -225,7 +227,19 @@ fun ProfileScreen(
                         fontSize = 18.sp
                     )
 
-                    IconButton(onClick = {}) {
+                    IconButton(onClick = {
+                        Toast.makeText(context, "Generating PDF...", Toast.LENGTH_SHORT).show()
+                        PdfExporter.exportSoundCapsuleToPdf(context, statsState) { uri ->
+                            if (uri != null) {
+                                PdfExporter.sharePdf(context, uri)
+                            } else {
+                                // Run on main thread
+                                (context as? android.app.Activity)?.runOnUiThread {
+                                    Toast.makeText(context, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    }) {
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = "Download",
