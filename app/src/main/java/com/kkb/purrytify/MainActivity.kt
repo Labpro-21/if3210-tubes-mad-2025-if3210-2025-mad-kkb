@@ -30,6 +30,7 @@ import com.kkb.purrytify.data.remote.ApiService
 import com.kkb.purrytify.util.MediaPlayerManager
 import com.kkb.purrytify.viewmodel.ChartViewModel
 import javax.inject.Inject
+import com.kkb.purrytify.util.CheckNotificationPermission
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -58,6 +59,7 @@ class MainActivity : ComponentActivity() {
             }
 
             setContent {
+                CheckNotificationPermission()
                 val navController = rememberNavController()
                 val connectivityObserver = remember { ConnectivityObserver(context) }
                 val isConnected by connectivityObserver.observe().collectAsState(initial = true)
