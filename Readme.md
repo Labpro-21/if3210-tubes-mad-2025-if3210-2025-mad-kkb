@@ -125,9 +125,9 @@ Screenshots of the application can be found in the `screenshot/` folder.
 
 | NIM        | Milestone 1                                       | Milestone 2|
 |------------|---------------------------------------------------|------------|
-| 13522123   | Login, Logout, Mini Player, Profile,Network Sensing | Sound Capsule(Analytics), Export analytics, Online Songs, Download Online Songs | 
+| 13522123   | Login, Logout, Mini Player, Profile,Network Sensing | Notification Controls, AudioRouting and Output Device, Edit Profile | 
 | 13522151   | Library, Like Song, Login, Add Song,Home          | Share via URL, Share via QR, Responsivitas, Rekomendasi Lagu | 
-| 13522152   | Add Song, Media Player, Navbar,Home               | Notification Controls, AudioRouting and Output Device, Edit Profile |
+| 13522152   | Add Song, Media Player, Navbar,Home               | Sound Capsule(Analytics), Export analytics, Online Songs, Download Online Songs | 
 
 ---
 
