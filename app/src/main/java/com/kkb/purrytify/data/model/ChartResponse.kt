@@ -1,5 +1,8 @@
 package com.kkb.purrytify.data.model
 
+import com.kkb.purrytify.UserSong
+import java.time.LocalDateTime
+
 data class ChartSong(
     val id: Int,
     val title: String,
@@ -12,5 +15,17 @@ data class ChartSong(
     val createdAt: String,
     val updatedAt: String
 )
-
+fun ChartSong.toUserSong(): UserSong {
+    return UserSong(
+        userId = 0,
+        songId = this.id,
+        title = this.title,
+        artist = this.artist,
+        filePath = this.url,
+        coverPath = this.artwork,
+        createdAt = LocalDateTime.parse(this.createdAt),
+        lastPlayed = null,
+        isLiked = false,
+    )
+}
 typealias ChartResponse = List<ChartSong>
