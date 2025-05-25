@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,20 +31,93 @@ import com.kkb.purrytify.util.MediaPlayerManager
 import com.kkb.purrytify.viewmodel.ChartViewModel
 import com.kkb.purrytify.viewmodel.SongViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import com.kkb.purrytify.data.dao.TopArtistTimeListened
+import com.kkb.purrytify.data.dao.TopSongTimeListened
+import com.kkb.purrytify.data.model.toUserSong
+import com.kkb.purrytify.viewmodel.ProfileViewModel
 
 @Composable
 fun HomeScreen(navController: NavController, currentRoute: String) {
     val viewModel = hiltViewModel<SongViewModel>()
     val chartViewModel: ChartViewModel = hiltViewModel()
+    val profileViewModel: ProfileViewModel = hiltViewModel()
     val songs by viewModel.userSongList.collectAsState()
+    val serverSongs by chartViewModel.chartSongs.collectAsState()
     val context = LocalContext.current
     val currentSong by MediaPlayerManager.currentSong.collectAsState()
     val isPlaying by MediaPlayerManager.isPlaying.collectAsState()
     val newSongs = songs.sortedByDescending { it.createdAt }
     val recentlyPlayedSongs = songs.filter { it.lastPlayed != null }.sortedByDescending { it.lastPlayed }
+
+    // Sound capsule/statistics
+    val statsState by profileViewModel.statsState.collectAsState()
+    val latestCapsule = statsState.monthlyCapsules.firstOrNull()
+    val topSong: TopSongTimeListened? = latestCapsule?.topSong
+    val topArtist: TopArtistTimeListened? = latestCapsule?.topArtist
+
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
+    // --- Recommendation logic: combine top song, top artist, likes, recently played, and chart songs ---
+    val likedSongs = songs.filter { it.isLiked == true }
+    val recentlyPlayedArtists = recentlyPlayedSongs.map { it.artist }.distinct()
+    val recommendedSongs = remember(
+        likedSongs,
+        recentlyPlayedSongs,
+        serverSongs,
+        topSong,
+        topArtist
+    ) {
+        val rec = mutableListOf<UserSong>()
+
+        // 1. Add top song if available
+        topSong?.let { ts ->
+            val song = songs.find { it.title.equals(ts.title, true) && it.artist.equals(ts.artist, true) }
+            if (song != null) rec += song
+            else {
+                val serverSong = serverSongs.find { it.title.equals(ts.title, true) && it.artist.equals(ts.artist, true) }
+                if (serverSong != null) rec += serverSong.toUserSong()
+            }
+        }
+
+        // 2. Add top artist's songs
+        topArtist?.let { ta ->
+            val artistSongsLocal = songs.filter { it.artist.equals(ta.artist, true) }
+                .filterNot { rec.any { r -> r.songId == it.songId } }
+                .take(2)
+            rec += artistSongsLocal
+            val artistSongsServer = serverSongs.filter { it.artist.equals(ta.artist, true) }
+                .filterNot { s -> rec.any { r -> r.title.equals(s.title, true) && r.artist.equals(s.artist, true) } }
+                .take(1)
+            rec += artistSongsServer.map { it.toUserSong() }
+        }
+
+        rec += likedSongs.filterNot { s -> rec.any { it.songId == s.songId } }.take(2)
+        rec += recentlyPlayedSongs.filterNot { s -> rec.any { it.songId == s.songId } }.take(2)
+
+        val serverArtistSongs = serverSongs.filter { chartSong ->
+            recentlyPlayedArtists.any { it.equals(chartSong.artist, true) } &&
+                    rec.none { r -> r.title.equals(chartSong.title, true) && r.artist.equals(chartSong.artist, true) }
+        }.take(2)
+        rec += serverArtistSongs.map { it.toUserSong() }
+
+        // Fallback: fill to 10
+        val fallbackServerSongs = serverSongs.filter { chartSong ->
+            rec.none { r -> r.title.equals(chartSong.title, true) && r.artist.equals(chartSong.artist, true) }
+        }.map { it.toUserSong() }
+
+        var i = 0
+        while (rec.size < 10 && i < fallbackServerSongs.size) {
+            rec += fallbackServerSongs[i]
+            i++
+        }
+
+        rec.distinctBy { it.songId }.take(10)
+    }
+    LaunchedEffect(recommendedSongs) {
+        Log.d("HomeScreen", "recommendedSongs: $recommendedSongs")
+    }
     Box(Modifier.fillMaxSize()) {
         if (isLandscape) {
             Row(Modifier.fillMaxSize()) {
@@ -77,6 +151,26 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                         .padding(horizontal = 16.dp),
                     contentPadding = PaddingValues(vertical = 24.dp)
                 ) {
+                    item {
+                        Text("Rekomendasi untukmu", color = Color.White, fontWeight = FontWeight.Bold)
+                        Log.d("HomeScreen", "recommendedSongs: $recommendedSongs") // See your logs
+                        Spacer(modifier = Modifier.height(8.dp))
+                        if (recommendedSongs.isEmpty()) {
+                            Text("No recommendations found", color = Color.Gray)
+                        }
+                        LazyRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp) // Ensure visibility
+                        ) {
+                            items(recommendedSongs) { song ->
+                                SongViewBig(song = song, onClick = {
+                                    navController.navigate("track/${song.songId}")
+                                })
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
                     item {
                         Text("Charts", color = Color.White, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(8.dp))
@@ -157,82 +251,109 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                     }
                 }
             }
-        }else {
+        }
+        else {
             // Portrait
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black)
-                    .padding(horizontal = 16.dp, vertical = 0.dp)
+                    .padding(horizontal = 16.dp, vertical = 0.dp),
+                contentPadding = PaddingValues(vertical = 24.dp)
             ) {
-                Spacer(modifier = Modifier.height(24.dp))
-                Text("Charts", color = Color.White, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(8.dp))
-                val chartTypes = listOf(
-                    ChartType("global", "Global Top 50", "charts/global"),
-                    ChartType("id", "Indonesia Top 10", "charts/ID"),
-                    ChartType("my", "Malaysia Top 10", "charts/MY"),
-                    ChartType("us", "United States Top 10", "charts/US"),
-                    ChartType("uk", "United Kingdom Top 10", "charts/UK"),
-                    ChartType("ch", "Switzerland Top 10", "charts/CH"),
-                    ChartType("de", "Germany Top 10", "charts/DE"),
-                    ChartType("br", "Brazil Top 10", "charts/BR")
-                )
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp)
-                ) {
-                    items(chartTypes.size) { index ->
-                        val chart = chartTypes[index]
-                        Column(
-                            modifier = Modifier
-                                .width(120.dp)
-                                .clickable { navController.navigate(chart.route) }
-                                .padding(horizontal = 8.dp, vertical = 8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            AsyncImage(
-                                model = "",
-                                contentDescription = chart.title,
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text("Rekomendasi untukmu", color = Color.White, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    if (recommendedSongs.isEmpty()) {
+                        Text("No recommendations found", color = Color.Gray)
+                    }
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                    ) {
+                        items(recommendedSongs) { song ->
+                            SongViewBig(song = song, onClick = {
+                                navController.navigate("track/${song.songId}")
+                            })
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+                item {
+                    Text("Charts", color = Color.White, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val chartTypes = listOf(
+                        ChartType("global", "Global Top 50", "charts/global"),
+                        ChartType("id", "Indonesia Top 10", "charts/ID"),
+                        ChartType("my", "Malaysia Top 10", "charts/MY"),
+                        ChartType("us", "United States Top 10", "charts/US"),
+                        ChartType("uk", "United Kingdom Top 10", "charts/UK"),
+                        ChartType("ch", "Switzerland Top 10", "charts/CH"),
+                        ChartType("de", "Germany Top 10", "charts/DE"),
+                        ChartType("br", "Brazil Top 10", "charts/BR")
+                    )
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp)
+                    ) {
+                        items(chartTypes.size) { index ->
+                            val chart = chartTypes[index]
+                            Column(
                                 modifier = Modifier
-                                    .size(100.dp)
-                                    .clip(RoundedCornerShape(8.dp)),
-                                placeholder = painterResource(R.drawable.album_placeholder),
-                                error = painterResource(R.drawable.album_placeholder)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = chart.title,
-                                color = Color.White,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                textAlign = TextAlign.Center
-                            )
+                                    .width(120.dp)
+                                    .clickable { navController.navigate(chart.route) }
+                                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                AsyncImage(
+                                    model = "",
+                                    contentDescription = chart.title,
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .clip(RoundedCornerShape(8.dp)),
+                                    placeholder = painterResource(R.drawable.album_placeholder),
+                                    error = painterResource(R.drawable.album_placeholder)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = chart.title,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(24.dp))
-                Text("New songs", color = Color.White, fontWeight = FontWeight.Bold)
-                LazyRow {
-                    items(newSongs.size) { index ->
-                        val song = newSongs[index]
-                        SongViewBig(song = song, onClick = {
-                            navController.navigate("track/${song.songId}")
-                        })
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text("New songs", color = Color.White, fontWeight = FontWeight.Bold)
+                    LazyRow {
+                        items(newSongs.size) { index ->
+                            val song = newSongs[index]
+                            SongViewBig(song = song, onClick = {
+                                navController.navigate("track/${song.songId}")
+                            })
+                        }
                     }
                 }
-                Spacer(modifier = Modifier.height(24.dp))
-                Text("Recently played", color = Color.White, fontWeight = FontWeight.Bold)
-                LazyColumn {
-                    items(recentlyPlayedSongs.size) { index ->
-                        val song = recentlyPlayedSongs[index]
-                        SongView(song = song, onClick = {
-                            navController.navigate("track/${song.songId}")
-                        })
-                    }
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text("Recently played", color = Color.White, fontWeight = FontWeight.Bold)
                 }
-                Spacer(Modifier.height(56.dp)) // Space for NowPlayingBar
+                items(recentlyPlayedSongs.size) { index ->
+                    val song = recentlyPlayedSongs[index]
+                    SongView(song = song, onClick = {
+                        navController.navigate("track/${song.songId}")
+                    })
+                }
+                item {
+                    Spacer(Modifier.height(56.dp)) // Space for NowPlayingBar
+                }
             }
         }
         // --- Now Playing Bar and NavBar always on screen, both orientations ---

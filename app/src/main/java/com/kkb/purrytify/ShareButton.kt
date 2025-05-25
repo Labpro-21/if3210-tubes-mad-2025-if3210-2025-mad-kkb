@@ -30,6 +30,7 @@ import com.google.zxing.qrcode.QRCodeWriter
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.fillMaxWidth
 import java.io.File
 import java.io.FileOutputStream
 import android.graphics.Color as AndroidColor
@@ -108,7 +109,7 @@ fun ShareSongButton(currentSong: UserSong) {
             onDismissRequest = { showQrDialog = false },
             title = { Text("QR Lagu") },
             text = {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(modifier = Modifier.fillMaxWidth(),horizontalAlignment = Alignment.CenterHorizontally) {
                     qrBitmap?.let {
                         Image(
                             bitmap = it.asImageBitmap(),
@@ -121,18 +122,14 @@ fun ShareSongButton(currentSong: UserSong) {
                 }
             },
             confirmButton = {
-
-                // Share QR as image
                 qrBitmap?.let { bitmap ->
-                    //this is the error
                     shareQrBitmap(bitmap)
                 }
                 TextButton(onClick = {
                     showQrDialog = false
                 }) {
-                    Text("Share QR via Apps")
+                    Text("Tutup")
                 }
-
             }
         )
     }
@@ -167,17 +164,21 @@ fun shareQrBitmap(qrBitmap: Bitmap, modifier: Modifier = Modifier) {
 
     Button(
         onClick = {
-            val cachePath = File(context.cacheDir, "images")
+            val cachePath = File(context.filesDir, "images")
             cachePath.mkdirs()
             val file = File(cachePath, "qr.png")
-            FileOutputStream(file).use { out -> qrBitmap.compress(Bitmap.CompressFormat.PNG, 100, out) }
+            FileOutputStream(file).use { out ->
+                qrBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                out.flush()
+            }
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            val shareIntent = Intent().apply {
+                action = Intent.ACTION_SEND
                 type = "image/png"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            shareQrLauncher.launch(Intent.createChooser(shareIntent, "Share QR via"))
+            context.startActivity(Intent.createChooser(shareIntent, "Share QR via"))
         },
         modifier = modifier
     ) {
