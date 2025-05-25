@@ -19,6 +19,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
 import android.util.Log
+import com.kkb.purrytify.data.dao.DailyTimeListened
 
 data class ProfileUiState(
     val isLoading: Boolean = false,
@@ -33,6 +34,7 @@ data class MonthlySoundCapsule(
     val topArtist: TopArtistTimeListened?,
     val topArtists: List<TopArtistTimeListened> = emptyList(),
     val totalTimeListened: Long,
+    val dailyTime: List<DailyTimeListened> = emptyList(),
     val totalArtistsListened: Int,
     val totalSongsListened: Int,
     val dayStreakSong: DayStreakSongInfo? = null,
@@ -99,6 +101,7 @@ class ProfileViewModel @Inject constructor(
                 val topSongs = userSongDao.getTopSongByTimeListenedForMonth(userId, monthYearStr)
                 val topArtists = userSongDao.getTopArtistsByTimeListenedForMonth(userId, monthYearStr)
                 val totalTime = userSongDao.getUserTotalTimeListenedForMonth(userId, monthYearStr) ?: 0L
+                val dailyTime = userSongDao.getDailyTimeListenedInMonth(userId,monthYearStr)
                 val dayStreakSong = getSongWithHighestDayStreak(userId)
                 Log.d("topArtists", topArtists.toString())
                 if (totalTime > 0) {
@@ -110,6 +113,7 @@ class ProfileViewModel @Inject constructor(
                             topArtist = topArtists.firstOrNull(),
                             topArtists = topArtists,
                             totalTimeListened = totalTime,
+                            dailyTime = dailyTime,
                             totalArtistsListened = topArtists.size,
                             totalSongsListened = topSongs.size,
                             dayStreakSong = getSongWithHighestDayStreak(userId)

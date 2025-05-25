@@ -65,7 +65,6 @@ fun TopArtistScreen(
     val currentSong by MediaPlayerManager.currentSong.collectAsState()
     val isPlaying by MediaPlayerManager.isPlaying.collectAsState()
 
-
     LaunchedEffect(key1 = userId) {
         viewModel.fetchProfileStats(userId)
     }

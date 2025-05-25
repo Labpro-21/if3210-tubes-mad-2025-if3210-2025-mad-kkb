@@ -65,6 +65,18 @@ interface UserSongDao {
     """)
     suspend fun getSongsWithPlayDates(userId: Int): List<SongPlayDateInfo>
 
+    @Query("""
+        SELECT 
+            strftime('%d', datetime(lastPlayed/1000, 'unixepoch')) as day,
+            SUM(timeListened) as totalTimeListened
+        FROM UserSongs
+        WHERE userId = :userId
+        AND strftime('%m-%Y', datetime(lastPlayed/1000, 'unixepoch')) = :monthYear
+        GROUP BY day
+        ORDER BY day ASC
+    """)
+    suspend fun getDailyTimeListenedInMonth(userId: Int, monthYear: String): List<DailyTimeListened>
+
     @Delete
     suspend fun delete(usersongs: UserSongs)
 
@@ -92,4 +104,9 @@ data class SongPlayDateInfo(
     val filePath: String,
     val coverPath: String?,
     val lastPlayed: java.time.LocalDateTime?
+)
+
+data class DailyTimeListened(
+    val day: String,
+    val totalTimeListened: Long
 )

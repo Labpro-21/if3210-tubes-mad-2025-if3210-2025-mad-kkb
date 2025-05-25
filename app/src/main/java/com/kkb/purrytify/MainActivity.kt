@@ -112,6 +112,18 @@ class MainActivity : ComponentActivity() {
                                 monthIndex = monthIndex
                             )
                         }
+
+                        composable(
+                            "time-listened/{monthIndex}",
+                            arguments = listOf(navArgument("monthIndex") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val monthIndex = backStackEntry.arguments?.getInt("monthIndex") ?: 0
+                            TimeListenedScreen(
+                                navController = navController,
+                                currentRoute = "time-listened",
+                                monthIndex = monthIndex
+                            )
+                        }
 //                        composable("qr-scan"){
 //                            scan
 //                        }

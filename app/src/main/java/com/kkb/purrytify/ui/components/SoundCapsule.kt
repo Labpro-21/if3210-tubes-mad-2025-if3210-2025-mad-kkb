@@ -47,27 +47,6 @@ fun SoundCapsule(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Your Sound Capsule",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
-            )
-
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Default.Share,
-                    contentDescription = "Download",
-                    tint = Color.White
-                )
-            }
-        }
-
         Text(
             text = monthYear,
             color = Color.White,
@@ -80,7 +59,7 @@ fun SoundCapsule(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(8.dp))
                 .background(Color(0xFF1A1A1A))
-                .clickable { }
+                .clickable { navController?.navigate("time-listened/$monthIndex")}
                 .padding(16.dp)
         ) {
             Row(
