@@ -192,6 +192,7 @@ fun MiniPlayer(
                 selectedDeviceId = selectedDeviceId,
                 onDeviceSelected = { deviceId ->
                     val success = setAudioOutputDevice(context, deviceId, audioDevices)
+                    android.util.Log.d("MiniPlayer", "setAudioOutputDevice success: $success, deviceId: $deviceId")
                     if (success) {
                         selectedDeviceId = deviceId
                         // Re-apply audio routing to MediaPlayer
@@ -303,14 +304,17 @@ fun getDeviceIcon(deviceType: Int): androidx.compose.ui.graphics.vector.ImageVec
 }
 
 fun getAvailableAudioDevices(context: Context): List<AudioDeviceOption> {
+    android.util.Log.d("AudioDevices", "getAvailableAudioDevices called")
     val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     val devices = mutableListOf<AudioDeviceOption>()
 
     try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val audioDevices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+            android.util.Log.d("AudioDevices", "Total output devices detected: ${audioDevices.size}")
 
             audioDevices.forEach { device ->
+                android.util.Log.d("AudioDevices", "Device: type=${device.type}, name=${device.productName}, id=${device.id}")
                 when (device.type) {
                     AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
                     AudioDeviceInfo.TYPE_BUILTIN_EARPIECE,
@@ -329,12 +333,17 @@ fun getAvailableAudioDevices(context: Context): List<AudioDeviceOption> {
                             isDefault = device.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
                             deviceInfo = device
                         ))
+                        android.util.Log.d("AudioDevices", "Added device: id=${device.id}, name=${deviceName}, type=${device.type}")
+                    }
+                    else -> {
+                        android.util.Log.d("AudioDevices", "Skipped device type: ${device.type}")
                     }
                 }
             }
 
             // Tambahkan fallback jika tidak ada speaker built-in
             if (!devices.any { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }) {
+                android.util.Log.d("AudioDevices", "No built-in speaker found, adding fallback")
                 devices.add(AudioDeviceOption(
                     id = -1,
                     name = "Phone Speaker",
@@ -343,6 +352,7 @@ fun getAvailableAudioDevices(context: Context): List<AudioDeviceOption> {
                 ))
             }
         } else {
+            android.util.Log.d("AudioDevices", "Using fallback for Android < M")
             // Fallback untuk Android versi lama
             devices.add(AudioDeviceOption(
                 id = -1,
@@ -351,7 +361,9 @@ fun getAvailableAudioDevices(context: Context): List<AudioDeviceOption> {
                 isDefault = true
             ))
 
-            if (audioManager.isWiredHeadsetOn) {
+            val wiredHeadsetOn = audioManager.isWiredHeadsetOn
+            android.util.Log.d("AudioDevices", "isWiredHeadsetOn: $wiredHeadsetOn")
+            if (wiredHeadsetOn) {
                 devices.add(AudioDeviceOption(
                     id = -2,
                     name = "Wired Headset",
@@ -359,7 +371,9 @@ fun getAvailableAudioDevices(context: Context): List<AudioDeviceOption> {
                 ))
             }
 
-            if (audioManager.isBluetoothA2dpOn) {
+            val bluetoothA2dpOn = audioManager.isBluetoothA2dpOn
+            android.util.Log.d("AudioDevices", "isBluetoothA2dpOn: $bluetoothA2dpOn")
+            if (bluetoothA2dpOn) {
                 devices.add(AudioDeviceOption(
                     id = -3,
                     name = "Bluetooth Audio",
@@ -368,6 +382,7 @@ fun getAvailableAudioDevices(context: Context): List<AudioDeviceOption> {
             }
         }
     } catch (e: Exception) {
+        android.util.Log.e("AudioDevices", "Error getting audio devices", e)
         // Fallback jika terjadi error
         devices.clear()
         devices.add(AudioDeviceOption(
@@ -378,7 +393,13 @@ fun getAvailableAudioDevices(context: Context): List<AudioDeviceOption> {
         ))
     }
 
-    return devices.distinctBy { "${it.name}_${it.type}" }
+    val finalDevices = devices.distinctBy { "${it.name}_${it.type}" }
+    android.util.Log.d("AudioDevices", "Final device list (${finalDevices.size} devices):")
+    finalDevices.forEachIndexed { index, device ->
+        android.util.Log.d("AudioDevices", "$index: id=${device.id}, name=${device.name}, type=${device.type}, isDefault=${device.isDefault}")
+    }
+
+    return finalDevices
 }
 
 fun getDefaultDeviceName(deviceType: Int): String {
@@ -401,19 +422,26 @@ fun getCurrentAudioDevice(context: Context, devices: List<AudioDeviceOption>): I
     return try {
         when {
             audioManager.isBluetoothA2dpOn -> {
-                devices.find { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP }?.id ?: -3
+                val deviceId = devices.find { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP }?.id ?: -3
+                android.util.Log.d("MiniPlayer", "Current audio device: Bluetooth A2DP, id=$deviceId")
+                deviceId
             }
             audioManager.isWiredHeadsetOn -> {
-                devices.find {
+                val deviceId = devices.find {
                     it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
                             it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES
                 }?.id ?: -2
+                android.util.Log.d("MiniPlayer", "Current audio device: Wired Headset/Headphones, id=$deviceId")
+                deviceId
             }
             else -> {
-                devices.find { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }?.id ?: -1
+                val deviceId = devices.find { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }?.id ?: -1
+                android.util.Log.d("MiniPlayer", "Current audio device: Built-in Speaker, id=$deviceId")
+                deviceId
             }
         }
     } catch (e: Exception) {
+        android.util.Log.e("MiniPlayer", "Error getting current audio device", e)
         -1 // Default ke speaker
     }
 }
