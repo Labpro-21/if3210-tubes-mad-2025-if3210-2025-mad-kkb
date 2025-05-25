@@ -176,13 +176,13 @@ fun TrackScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Album Art
+                    // Album Art (smaller)
                     val painter = rememberAsyncImagePainter(
                         ImageRequest.Builder(LocalContext.current)
                             .data(song.coverPath)
                             .placeholder(R.drawable.album_placeholder)
                             .error(R.drawable.album_placeholder)
-                            .size(280)
+                            .size(150) // <<-- smaller size
                             .build()
                     )
 
@@ -191,23 +191,28 @@ fun TrackScreen(
                         contentDescription = "Album Art",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .size(280.dp)
+                            .size(150.dp) // <<-- smaller size
                             .clip(RoundedCornerShape(8.dp))
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    // Title and artist beneath the cover
                     Text(
                         text = song.title,
                         color = Color.White,
                         fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2, // allow wrapping
+                        modifier = Modifier.padding(horizontal = 8.dp)
                     )
 
                     Text(
                         text = song.artist,
                         color = Color.LightGray,
-                        fontSize = 14.sp
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        modifier = Modifier.padding(horizontal = 8.dp)
                     )
                 }
 
@@ -255,20 +260,6 @@ fun TrackScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Like button
-                        val songState by viewModel.userSongList.collectAsState()
-                        val userSong = songState.find { it.songId == song.songId }
-                        val isLiked = userSong?.isLiked ?: false
-                        IconButton(onClick = { viewModel.toggleLike(song.songId) }) {
-                            Icon(
-                                imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = if (isLiked) "Unlike" else "Like",
-                                tint = if (isLiked) Color.Red else Color.White
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
                         // Progress slider
                         Slider(
                             value = playbackProgress,
@@ -352,222 +343,236 @@ fun TrackScreen(
                         }
                     }
 
-                    // Share button at bottom
+                    // Share + Like button at the bottom right
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 24.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val songState by viewModel.userSongList.collectAsState()
+                        val userSong = songState.find { it.songId == song.songId }
+                        val isLiked = userSong?.isLiked ?: false
+                        // Like button
+                        IconButton(onClick = { viewModel.toggleLike(song.songId) }) {
+                            Icon(
+                                imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = if (isLiked) "Unlike" else "Like",
+                                tint = if (isLiked) Color.Red else Color.White
+                            )
+                        }
+                        // Share button
+                        ShareSongButton(currentSong!!)
+                    }
+                }
+            }
+        }else {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        IconButton(onClick = {
+                            // Try to pop from back stack, if not possible go to home
+                            val popped = navController.popBackStack()
+                            if (!popped) {
+                                navController.navigate("home") {
+                                    popUpTo("home") { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.ExpandMore,
+                                contentDescription = "Back",
+                                tint = Color.White
+                            )
+                        }
+
+                        Box {
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "Menu",
+                                    tint = Color.White
+                                )
+                            }
+
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Hapus Lagu") },
+                                    onClick = {
+                                        showMenu = false
+                                        viewModel.deleteSong(currentSong!!)
+                                        // Try to pop from back stack, if not possible go to home
+                                        val popped = navController.popBackStack()
+                                        if (!popped) {
+                                            navController.navigate("home") {
+                                                popUpTo("home") { inclusive = true }
+                                                launchSingleTop = true
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        }
+
+                    }
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    val painter = rememberAsyncImagePainter(
+                        ImageRequest.Builder(LocalContext.current)
+                            .data(song.coverPath)
+                            .placeholder(R.drawable.album_placeholder)
+                            .error(R.drawable.album_placeholder)
+                            .size(280)
+                            .build()
+                    )
+
+                    Image(
+                        painter = painter,
+                        contentDescription = "Album Art",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(280.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = song.title,
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        text = song.artist,
+                        color = Color.LightGray,
+                        fontSize = 14.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val songState by viewModel.userSongList.collectAsState()
+                    val userSong = songState.find { it.songId == song.songId }
+                    val isLiked = userSong?.isLiked ?: false
+                    IconButton(onClick = {
+                        viewModel.toggleLike(song.songId)
+                    }) {
+                        Icon(
+                            imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = if (isLiked) "Unlike" else "Like",
+                            tint = if (isLiked) Color.Red else Color.White
+                        )
+                    }
+
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Slider(
+                        value = playbackProgress,
+                        onValueChange = { playbackProgress = it },
+                        onValueChangeFinished = {
+                            val player = MediaPlayerManager.getPlayer()
+                            player?.seekTo((duration * playbackProgress).toInt())
+                        },
+                        valueRange = 0f..1f,
+                        modifier = Modifier.fillMaxWidth(0.9f),
+                        colors = SliderDefaults.colors(
+                            thumbColor = Color.White,
+                            activeTrackColor = Color.White,
+                            inactiveTrackColor = Color.Gray
+                        )
+                    )
+
+                    val currentSeconds = ((playbackProgress * duration) / 1000).toInt()
+                    val totalSeconds = (duration / 1000).toInt()
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(0.9f),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            String.format("%d:%02d", currentSeconds / 60, currentSeconds % 60),
+                            color = Color.White,
+                            fontSize = 12.sp
+                        )
+                        Text(
+                            String.format("%d:%02d", totalSeconds / 60, totalSeconds % 60),
+                            color = Color.White,
+                            fontSize = 12.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = {
+                            MediaPlayerManager.previous(context)
+                        }) {
+                            Icon(
+                                Icons.Default.SkipPrevious,
+                                contentDescription = "Previous",
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+
+                        IconButton(
+                            onClick = {
+                                if (isPlayerPlaying) {
+                                    MediaPlayerManager.pause(context)
+                                } else {
+                                    MediaPlayerManager.resume(context)
+                                }
+                            },
+                            modifier = Modifier
+                                .size(64.dp)
+                                .background(Color.White, shape = CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = if (isPlayerPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = "Play",
+                                tint = Color.Black,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+
+                        IconButton(onClick = {
+                            MediaPlayerManager.next(context)
+                        }) {
+                            Icon(
+                                Icons.Default.SkipNext,
+                                contentDescription = "Next",
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         ShareSongButton(currentSong!!)
-                    }
-                }
-            }
-        }else {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    IconButton(onClick = {
-                        // Try to pop from back stack, if not possible go to home
-                        val popped = navController.popBackStack()
-                        if (!popped) {
-                            navController.navigate("home") {
-                                popUpTo("home") { inclusive = true }
-                                launchSingleTop = true
-                            }
-                        }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.ExpandMore,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
-                    }
-
-                    Box {
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "Menu",
-                                tint = Color.White
-                            )
-                        }
-
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Hapus Lagu") },
-                                onClick = {
-                                    showMenu = false
-                                    viewModel.deleteSong(currentSong!!)
-                                    // Try to pop from back stack, if not possible go to home
-                                    val popped = navController.popBackStack()
-                                    if (!popped) {
-                                        navController.navigate("home") {
-                                            popUpTo("home") { inclusive = true }
-                                            launchSingleTop = true
-                                        }
-                                    }
-                                }
-                            )
-                        }
-                    }
-
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                val painter = rememberAsyncImagePainter(
-                    ImageRequest.Builder(LocalContext.current)
-                        .data(song.coverPath)
-                        .placeholder(R.drawable.album_placeholder)
-                        .error(R.drawable.album_placeholder)
-                        .size(280)
-                        .build()
-                )
-
-                Image(
-                    painter = painter,
-                    contentDescription = "Album Art",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(280.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = song.title,
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Text(
-                    text = song.artist,
-                    color = Color.LightGray,
-                    fontSize = 14.sp
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-                val songState by viewModel.userSongList.collectAsState()
-                val userSong = songState.find { it.songId == song.songId }
-                val isLiked = userSong?.isLiked ?: false
-                IconButton(onClick = {
-                    viewModel.toggleLike(song.songId)
-                }) {
-                    Icon(
-                        imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = if (isLiked) "Unlike" else "Like",
-                        tint = if (isLiked) Color.Red else Color.White
-                    )
-                }
-
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Slider(
-                    value = playbackProgress,
-                    onValueChange = { playbackProgress = it },
-                    onValueChangeFinished = {
-                        val player = MediaPlayerManager.getPlayer()
-                        player?.seekTo((duration * playbackProgress).toInt())
-                    },
-                    valueRange = 0f..1f,
-                    modifier = Modifier.fillMaxWidth(0.9f),
-                    colors = SliderDefaults.colors(
-                        thumbColor = Color.White,
-                        activeTrackColor = Color.White,
-                        inactiveTrackColor = Color.Gray
-                    )
-                )
-
-                val currentSeconds = ((playbackProgress * duration) / 1000).toInt()
-                val totalSeconds = (duration / 1000).toInt()
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(0.9f),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        String.format("%d:%02d", currentSeconds / 60, currentSeconds % 60),
-                        color = Color.White,
-                        fontSize = 12.sp
-                    )
-                    Text(
-                        String.format("%d:%02d", totalSeconds / 60, totalSeconds % 60),
-                        color = Color.White,
-                        fontSize = 12.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = {
-                        MediaPlayerManager.previous(context)
-                    }) {
-                        Icon(
-                            Icons.Default.SkipPrevious,
-                            contentDescription = "Previous",
-                            tint = Color.White,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = {
-                            if (isPlayerPlaying) {
-                                MediaPlayerManager.pause(context)
-                            } else {
-                                MediaPlayerManager.resume(context)
-                            }
-                        },
-                        modifier = Modifier
-                            .size(64.dp)
-                            .background(Color.White, shape = CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = if (isPlayerPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = "Play",
-                            tint = Color.Black,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-
-                    IconButton(onClick = {
-                        MediaPlayerManager.next(context)
-                    }) {
-                        Icon(
-                            Icons.Default.SkipNext,
-                            contentDescription = "Next",
-                            tint = Color.White,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    ShareSongButton(currentSong!!)
 //                val domain = context.getString(R.string.deeplink_domain)
 //                IconButton(onClick = {
 //                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
@@ -582,8 +587,8 @@ fun TrackScreen(
 //                }) {
 //                    Icon(imageVector = Icons.Default.Share, contentDescription = "Share", tint = Color.White)
 //                }
+                    }
                 }
-            }
         }
     }
 }
