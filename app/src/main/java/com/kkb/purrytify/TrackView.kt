@@ -73,6 +73,9 @@ fun TrackScreen(
         var songToPlay = song
         
         if (currentPlayingSong?.songId != songToPlay.songId || !isPlayerPlaying) {
+            if(isPlayerPlaying){
+                MediaPlayerManager.stop(context)
+            }
             Log.d("tess(song)", songToPlay.toString())
             Log.d("tess(curentsong)", currentPlayingSong.toString())
 
@@ -109,24 +112,48 @@ fun TrackScreen(
     }
 
     LaunchedEffect(isPlayerPlaying, song.songId) {
-        lastReportedSeconds = 0L
-        while (isPlayerPlaying) {
-            val player = MediaPlayerManager.getPlayer()
-            if (player != null && player.isPlaying) {
-                val current = player.currentPosition
-                val total = player.duration.takeIf { it > 0 } ?: 1
-                playbackProgress = current.toFloat() / total
-                duration = total.toFloat()
-                val seconds = (player.currentPosition / 1000L)
-                if (seconds > lastReportedSeconds) {
-                    val delta = seconds - lastReportedSeconds
-                    if (delta > 0) {
+        val currentPlayingSong = MediaPlayerManager.getCurrentSong()
+        var songToPlay = song
+
+        if (currentPlayingSong?.songId != songToPlay.songId ) {
+            MediaPlayerManager.stop(context)
+            Log.d("tess(song)", songToPlay.toString())
+            Log.d("tess(curentsong)", currentPlayingSong.toString())
+
+            if (currentPlayingSong != null) {
+                songToPlay = currentPlayingSong
+            }
+
+            val uri = Uri.parse(songToPlay.filePath)
+            val isRemote = songToPlay.filePath.startsWith("http://") || songToPlay.filePath.startsWith("https://")
+
+            MediaPlayerManager.play(
+                song = songToPlay,
+                uri = if (isRemote) null else uri,
+                contentResolver = if (isRemote) null else contentResolver,
+                isRemote = isRemote,
+                context = context
+            )
+        }else {
+            lastReportedSeconds = 0L
+            while (isPlayerPlaying) {
+                val player = MediaPlayerManager.getPlayer()
+                if (player != null && player.isPlaying) {
+                    val current = player.currentPosition
+                    val total = player.duration.takeIf { it > 0 } ?: 1
+                    playbackProgress = current.toFloat() / total
+                    duration = total.toFloat()
+                    val seconds = (player.currentPosition / 1000L)
+                    if (seconds > lastReportedSeconds) {
+                        val delta = seconds - lastReportedSeconds
+                        if (delta > 0) {
 //                        viewModel.updateTimeListened(song.songId, delta)
-                        lastReportedSeconds = seconds
+                            lastReportedSeconds = seconds
+                        }
                     }
                 }
+                delay(500)
             }
-            delay(500)
         }
     }
 
