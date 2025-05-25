@@ -1,10 +1,13 @@
 package com.kkb.purrytify
 
+import android.content.res.Configuration
 import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -15,6 +18,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -42,6 +46,9 @@ fun TimeListenedScreen(
 ) {
     val viewModel = hiltViewModel<ProfileViewModel>()
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
     val userId = TokenStorage.getUserId(context)?.toIntOrNull() ?: return
     val statsState by viewModel.statsState.collectAsState()
     val chartViewModel: ChartViewModel = hiltViewModel()
@@ -64,136 +71,182 @@ fun TimeListenedScreen(
     Scaffold(
         containerColor = Color.Black,
         topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Time Listened",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        },
-        bottomBar = {
-            Column {
-                if (currentSong != null) {
-                    MiniPlayer(
-                        currentSong = currentSong!!,
-                        isPlaying = isPlaying,
-                        onPlayPause = {
-                            if (isPlaying) MediaPlayerManager.pause()
-                            else currentSong?.let { song ->
-                                MediaPlayerManager.play(
-                                    song = song,
-                                    uri = Uri.parse(song.filePath),
-                                    contentResolver = context.contentResolver,
-                                    context = context
-                                )
-                            }
-                        },
-                        onNext = { /* Implement next song logic */ },
-                        onClick = {
-                            val song = currentSong!!
-                            if (song.userId == 0) {
-                                val chartSongs = chartViewModel.chartSongs.value
-                                val currentChartType = chartViewModel.currentChartType.value.lowercase()
-                                Log.d("chartype", currentChartType)
-                                if (chartSongs.isEmpty()) {
-                                    chartViewModel.fetchChart(currentChartType)
-                                }
-
-                                val index = chartSongs.indexOfFirst { it.id == song.songId }
-                                if (index != -1) {
-                                    navController.navigate("track_chart/${currentChartType}/$index")
-                                }
-                            } else {
-                                navController.navigate("track/${song.songId}")
-                            }
-                        }
-                    )
-                }
-                BottomNavigationBar(
-                    navController = navController,
-                    currentRoute = currentRoute,
-                    context = context
-                )
-            }
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .background(Color.Black)
-                .fillMaxSize()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
-            ) {
-                // Month display
-                Text(
-                    text = monthYear,
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Normal
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Total time listened text
-                val totalMinutes = capsule?.totalTimeListened?.div(60) ?: 0
-                Text(
-                    text = buildAnnotatedString {
-                        append("You listened to music for\n")
-                        withStyle(
-                            style = SpanStyle(
-                                color = Color(0xFF1DB954),
-                                fontWeight = FontWeight.Bold
-                            )
-                        ) {
-                            append("$totalMinutes minutes")
-                        }
-                        append(" this month.")
-                    },
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 32.sp
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Daily average
-                val dailyAverage = if (capsule != null && capsule.dailyTime.isNotEmpty()) {
-                    totalMinutes / capsule.dailyTime.size
-                } else 0
-
-                Text(
-                    text = "Daily average: $dailyAverage min",
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 14.sp
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Chart
-                Box(
+            if(!isLandscape){
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp)
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Time Listened",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+        },
+        bottomBar = {
+            if(!isLandscape){
+                Column {
+                    if (currentSong != null) {
+                        MiniPlayer(
+                            currentSong = currentSong!!,
+                            isPlaying = isPlaying,
+                            onPlayPause = {
+                                if (isPlaying) MediaPlayerManager.pause()
+                                else currentSong?.let { song ->
+                                    MediaPlayerManager.play(
+                                        song = song,
+                                        uri = Uri.parse(song.filePath),
+                                        contentResolver = context.contentResolver,
+                                        context = context
+                                    )
+                                }
+                            },
+                            onNext = { /* Implement next song logic */ },
+                            onClick = {
+                                val song = currentSong!!
+                                if (song.userId == 0) {
+                                    val chartSongs = chartViewModel.chartSongs.value
+                                    val currentChartType = chartViewModel.currentChartType.value.lowercase()
+                                    Log.d("chartype", currentChartType)
+                                    if (chartSongs.isEmpty()) {
+                                        chartViewModel.fetchChart(currentChartType)
+                                    }
+
+                                    val index = chartSongs.indexOfFirst { it.id == song.songId }
+                                    if (index != -1) {
+                                        navController.navigate("track_chart/${currentChartType}/$index")
+                                    }
+                                } else {
+                                    navController.navigate("track/${song.songId}")
+                                }
+                            }
+                        )
+                    }
+                    BottomNavigationBar(
+                        navController = navController,
+                        currentRoute = currentRoute,
+                        context = context
+                    )
+                }
+            }
+
+        }
+    ) { innerPadding ->
+        if (isLandscape) {
+
+            Row(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .background(Color.Black)
+                    .fillMaxSize()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .width(130.dp)
+                        .fillMaxHeight()
+                        .background(Color(0xFF181818))
+                        .padding(vertical = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    BottomNavigationBar(
+                        navController = navController,
+                        currentRoute = currentRoute,
+                        context = context
+                    )
+                }
+                // Left: Month & stats
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(24.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Time Listened",
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    // Month display
+                    Text(
+                        text = monthYear,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Normal
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Total time listened text
+                    val totalMinutes = capsule?.totalTimeListened?.div(60) ?: 0
+                    Text(
+                        text = buildAnnotatedString {
+                            append("You listened to music for\n")
+                            withStyle(
+                                style = SpanStyle(
+                                    color = Color(0xFF1DB954),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            ) {
+                                append("$totalMinutes minutes")
+                            }
+                            append(" this month.")
+                        },
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 32.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Daily average
+                    val dailyAverage = if (capsule != null && capsule.dailyTime.isNotEmpty()) {
+                        totalMinutes / capsule.dailyTime.size
+                    } else 0
+
+                    Text(
+                        text = "Daily average: $dailyAverage min",
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 14.sp
+                    )
+                }
+                // Right: Chart
+                Box(
+                    modifier = Modifier
+                        .weight(1.5f)
+                        .padding(16.dp)
+                        .fillMaxHeight()
                         .background(Color(0xFF1A1A1A))
                         .padding(16.dp)
                 ) {
@@ -206,14 +259,84 @@ fun TimeListenedScreen(
                             modifier = Modifier.align(Alignment.Center)
                         )
                     }
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .background(Color.Black)
+                    .fillMaxSize()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                ) {
+                    // Month display
+                    Text(
+                        text = monthYear,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Normal
+                    )
 
-//                    Text(
-//                        text = "Daily Chart",
-//                        color = Color.White,
-//                        fontSize = 16.sp,
-//                        fontWeight = FontWeight.Bold,
-//                        modifier = Modifier.align(Alignment.Center)
-//                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Total time listened text
+                    val totalMinutes = capsule?.totalTimeListened?.div(60) ?: 0
+                    Text(
+                        text = buildAnnotatedString {
+                            append("You listened to music for\n")
+                            withStyle(
+                                style = SpanStyle(
+                                    color = Color(0xFF1DB954),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            ) {
+                                append("$totalMinutes minutes")
+                            }
+                            append(" this month.")
+                        },
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 32.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Daily average
+                    val dailyAverage = if (capsule != null && capsule.dailyTime.isNotEmpty()) {
+                        totalMinutes / capsule.dailyTime.size
+                    } else 0
+
+                    Text(
+                        text = "Daily average: $dailyAverage min",
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 14.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Chart
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .background(Color(0xFF1A1A1A))
+                            .padding(16.dp)
+                    ) {
+                        if (capsule != null && capsule.dailyTime.isNotEmpty()) {
+                            DailyListeningChart(capsule.dailyTime)
+                        } else {
+                            Text(
+                                text = "No listening data available",
+                                color = Color.White.copy(alpha = 0.5f),
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        }
+                    }
                 }
             }
         }
