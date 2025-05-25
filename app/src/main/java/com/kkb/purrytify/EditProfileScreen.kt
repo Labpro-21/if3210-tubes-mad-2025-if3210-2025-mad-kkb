@@ -113,31 +113,21 @@ fun EditProfileScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (selectedImageUri != null) {
+                    // Show selected image
                     AsyncImage(
                         model = selectedImageUri,
                         contentDescription = "Selected Profile Photo",
                         modifier = Modifier
                             .size(120.dp)
                             .clip(CircleShape)
-                            .background(Color.Gray),
-                        contentScale = ContentScale.Crop
-                    )
-                } else if (uiState.profile?.profilePhoto?.isNotEmpty() == true) {
-                    AsyncImage(
-                        model = uiState.profile?.profilePhoto,
-                        contentDescription = "Current Profile Photo",
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clip(CircleShape)
-                            .background(Color.Gray),
+                            .background(Color.Gray.copy(alpha = 0.3f)),
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    Icon(
-                        imageVector = Icons.Filled.Person,
-                        contentDescription = "Default Profile",
-                        modifier = Modifier.size(120.dp),
-                        tint = Color.White
+                    // Show current profile photo using ProfileAvatar component
+                    ProfileAvatar(
+                        profilePhotoPath = uiState.profile?.profilePhoto,
+                        modifier = Modifier.size(120.dp)
                     )
                 }
 
