@@ -49,10 +49,12 @@ import com.kkb.purrytify.viewmodel.ChartViewModel
 import com.kkb.purrytify.viewmodel.LikeViewModel
 import com.kkb.purrytify.viewmodel.SongViewModel
 import kotlinx.coroutines.launch
+import com.kkb.purrytify.util.CheckNotificationPermission
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(navController: NavController, currentRoute: String){
+    CheckNotificationPermission()
     val viewModel = hiltViewModel<SongViewModel>()
     val chartViewModel: ChartViewModel = hiltViewModel()
     val likeviewModel = hiltViewModel<LikeViewModel>()
