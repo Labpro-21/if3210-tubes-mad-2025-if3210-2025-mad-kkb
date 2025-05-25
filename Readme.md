@@ -39,7 +39,7 @@ Purrytify is a modern music player application that allows users to browse, play
 
 ## Libraries Used
 The following libraries and tools are utilized in this project:
-- **Jetpack Compose**: For building the UI.- **Jetpack Compose**: For building modern, reactive UIs with Kotlin.
+- **Jetpack Compose**: For building modern, reactive UIs with Kotlin.
   - `androidx.compose.material3:material3`
   - `androidx.compose.material:material-icons-extended`
   - `androidx.compose.ui:ui`
@@ -118,6 +118,7 @@ Screenshots of the application can be found in the `screenshot/` folder.
 ![](image/6.jpg)
 ![](image/7.jpg)
 ![](image/8.jpg)
+![](image/9.jpg)
 ---
 
 ## Team Work Distribution
@@ -140,7 +141,7 @@ Screenshots of the application can be found in the `screenshot/` folder.
 |  13522151| 5                         | 25                           | 30                 |
 |  13522152  | 5                         | 25                          | 30                 |
 
-# Milestone 1
+# Milestone 2
 
 | Name       | Preparation Time (hours) | Development Time (hours) | Total Time (hours) |
 |------------|---------------------------|---------------------------|--------------------|
