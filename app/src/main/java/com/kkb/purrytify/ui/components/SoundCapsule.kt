@@ -27,6 +27,9 @@ import coil.request.ImageRequest
 import com.kkb.purrytify.data.dao.TopArtistTimeListened
 import com.kkb.purrytify.data.dao.TopSongTimeListened
 import com.kkb.purrytify.viewmodel.DayStreakSongInfo
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun SoundCapsule(
@@ -191,62 +194,70 @@ fun SoundCapsule(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xFF1A1A1A))
-        ) {
-            if (dayStreakSong != null) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(dayStreakSong.coverPath)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = dayStreakSong.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.Bottom
-                ) {
-                    Text(
-                        text = "You had a ${dayStreakSong.dayStreak}-day streak",
-                        color = Color.White,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
+        if (monthIndex == 0) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFF1A1A1A))
+            ) {
+                if (dayStreakSong != null) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(dayStreakSong.coverPath)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = dayStreakSong.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
                     )
 
-                    Text(
-                        text = "You played ${dayStreakSong.title} by ${dayStreakSong.artist} day after day. You were on fire",
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.Bottom
+                    ) {
+                        Text(
+                            text = "You had a ${dayStreakSong.dayStreak}-day streak",
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
 
-                    Text(
-                        text = "Mar 21-25, 2025",
-                        color = Color.Gray,
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
-                }
-            } else {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No streaks yet",
-                        color = Color.Gray,
-                        fontSize = 16.sp
-                    )
+                        Text(
+                            text = "You played ${dayStreakSong.title} by ${dayStreakSong.artist} day after day. You were on fire",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+
+                        Text(
+                            text = if (dayStreakSong?.dayStreak != null) {
+                                val today = LocalDate.now()
+                                val startDate = today.minusDays(dayStreakSong.dayStreak.toLong() - 1)
+                                val formatter = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
+                                "${startDate.format(formatter)}-${today.format(formatter)}, ${today.year}"
+                            } else {
+                                "No streak dates available"
+                            },
+                            color = Color.Gray,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(top = 16.dp)
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No streaks yet",
+                            color = Color.Gray,
+                            fontSize = 16.sp
+                        )
+                    }
                 }
             }
         }
