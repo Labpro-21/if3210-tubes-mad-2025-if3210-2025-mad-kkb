@@ -78,7 +78,6 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation("com.google.zxing:core:3.5.3")
     implementation("androidx.media:media:1.6.0")
-
     // For CameraX
     implementation("androidx.camera:camera-camera2:1.3.0")
     implementation("androidx.camera:camera-lifecycle:1.3.0")
@@ -93,5 +92,7 @@ dependencies {
     // OkHttp for logging and interceptors
     implementation ("com.squareup.okhttp3:okhttp:4.11.0")
     implementation ("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
+    implementation ("com.itextpdf:itextpdf:5.5.13.3")
 
 }

@@ -295,6 +295,10 @@ class MainActivity : ComponentActivity() {
                         ChartScreen(navController = navController, chartType = "BR")
                     }
 
+                    composable("edit_profile") {
+                        EditProfileScreen(navController = navController)
+                    }
+
                     }
                 }
             }
