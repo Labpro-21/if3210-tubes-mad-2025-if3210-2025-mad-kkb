@@ -5,11 +5,15 @@ import com.kkb.purrytify.data.model.ChartSong
 import com.kkb.purrytify.data.model.LoginRequest
 import com.kkb.purrytify.data.model.LoginResponse
 import com.kkb.purrytify.data.model.ProfileResponse
+import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Multipart
+import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.Path
 
 interface ApiService {
@@ -47,6 +51,13 @@ interface ApiService {
 
     @GET("/api/top-songs/BR")
     suspend fun getTopBR(): Response<ChartResponse>
+
+    @Multipart
+    @PATCH("api/profile")
+    suspend fun updateProfile(
+        @Header("Authorization") token: String,
+        @Part parts: List<MultipartBody.Part>
+    ): ProfileResponse
 
     data class RefreshTokenRequest(val refreshToken: String)
 }

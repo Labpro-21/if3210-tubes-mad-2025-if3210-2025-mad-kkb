@@ -83,6 +83,7 @@ fun ProfileScreen(
 
             // Main profile content
             ProfileContent(
+                navController = navController,
                 uiState = uiState,
                 statsState = statsState,
                 totalSongs = totalSongs,
@@ -176,7 +177,7 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Button(
-                    onClick = { /* Edit profile */ },
+                    onClick = { navController.navigate("edit_profile") },
                     shape = RoundedCornerShape(20.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
                     modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -255,6 +256,7 @@ fun ProfileScreen(
 }
 @Composable
 private fun ProfileContent(
+    navController: NavController,
     modifier: Modifier = Modifier,
     uiState: ProfileUiState,
     statsState: ProfileStatsUiState,
@@ -333,7 +335,7 @@ private fun ProfileContent(
         Spacer(modifier = Modifier.height(12.dp))
 
         Button(
-            onClick = { /* Edit profile */ },
+            onClick = { navController.navigate("edit_profile") },
             shape = RoundedCornerShape(20.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray),
             modifier = Modifier.align(Alignment.CenterHorizontally)
