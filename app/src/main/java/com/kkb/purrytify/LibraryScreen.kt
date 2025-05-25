@@ -93,16 +93,17 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
             )
 
             // Main Content
-            Box(
+            Column(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxSize()
+                    .fillMaxHeight()
             ) {
                 LazyColumn(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxHeight()
                         .background(Color.Black)
                         .padding(horizontal = 16.dp)
+                        .weight(1f)
                 ) {
                     item {
                         Spacer(modifier = Modifier.height(16.dp))
@@ -161,7 +162,7 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
                             }
 
                             AndroidView(
-                                modifier = Modifier.fillParentMaxHeight(),
+                                modifier = Modifier.fillMaxHeight(),
                                 factory = { ctx ->
                                     RecyclerView(ctx).apply {
                                         layoutManager = LinearLayoutManager(ctx)
@@ -178,57 +179,6 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
                         }
                     }
                 }
-
-//                // MiniPlayer at bottom
-//                if (currentSong != null) {
-//                    Box(
-//                        modifier = Modifier
-//                            .align(Alignment.BottomEnd)
-//                            .fillMaxWidth(0.85f)
-//                    ) {
-//                        MiniPlayer(
-//                            currentSong = currentSong!!,
-//                            isPlaying = isPlaying,
-//                            onPlayPause = {
-//                                if (isPlaying) {
-//                                    MediaPlayerManager.pause()
-//                                    Log.d("Library", "Player paused")
-//                                } else {
-//                                    currentSong?.let { song ->
-//                                        MediaPlayerManager.play(
-//                                            song = song,
-//                                            uri = Uri.parse(song.filePath),
-//                                            contentResolver = context.contentResolver,
-//                                            context = context
-//                                        )
-//                                        Log.d("Library", "Playing song: ${song.title}")
-//                                    }
-//                                }
-//                            },
-//                            onNext = { /* Implement next song logic */ },
-//                            onClick = {
-//                                val song = currentSong!!
-//                                if (song.userId == 0) {
-//                                    val chartSongs = chartViewModel.chartSongs.value
-//                                    val currentChartType = chartViewModel.currentChartType.value.lowercase()
-//                                    if (chartSongs.isEmpty()) {
-//                                        chartViewModel.fetchChart(currentChartType)
-//                                    }
-//                                    val index = chartSongs.indexOfFirst { it.id == song.songId }
-//                                    if (index != -1) {
-//                                        val route = "track_chart/${currentChartType}/$index"
-//                                        Log.d("Library", "Navigating to $route")
-//                                        navController.navigate(route)
-//                                    }
-//                                } else {
-//                                    val route = "track/${song.songId}"
-//                                    Log.d("Library", "Navigating to $route")
-//                                    navController.navigate(route)
-//                                }
-//                            }
-//                        )
-//                    }
-//                }
             }
         }
     } else {
