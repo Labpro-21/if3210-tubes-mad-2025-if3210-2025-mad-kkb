@@ -1,6 +1,7 @@
 package com.kkb.purrytify.data.dao
 
 import androidx.room.*
+import com.kkb.purrytify.UserSong
 import com.kkb.purrytify.data.model.UserSongs
 import java.time.LocalDateTime
 

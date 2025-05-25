@@ -67,10 +67,12 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
     val currentSong by MediaPlayerManager.currentSong.collectAsState()
     val isPlaying by MediaPlayerManager.isPlaying.collectAsState()
 
-    val displayedSongs = if (selectedTab == "Liked") {
-        songs.filter { it.isLiked }
-    } else {
-        songs
+    val displayedSongs = when (selectedTab) {
+        "Liked" -> songs.filter { it.isLiked }
+        "Downloaded" -> songs.filter { 
+            it.filePath.startsWith("https://") || it.filePath.startsWith("http://") 
+        }
+        else -> songs
     }
 
     if (showBottomSheet) {
@@ -188,6 +190,8 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
                     FilterButton("All", selectedTab == "All") { selectedTab = "All" }
                     Spacer(modifier = Modifier.width(10.dp))
                     FilterButton("Liked", selectedTab == "Liked") { selectedTab = "Liked" }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    FilterButton("Downloaded", selectedTab == "Downloaded") { selectedTab = "Downloaded" }
                 }
 
                 AndroidView(
