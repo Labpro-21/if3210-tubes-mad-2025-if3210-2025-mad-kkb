@@ -1,7 +1,9 @@
 package com.kkb.purrytify
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.net.Uri
@@ -15,6 +17,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.*
@@ -34,6 +37,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.LatLng
 import com.kkb.purrytify.viewmodel.EditProfileViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -53,6 +57,8 @@ fun EditProfileScreen(
     var location by remember { mutableStateOf("") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var isGettingLocation by remember { mutableStateOf(false) }
+    var selectedLatLng by remember { mutableStateOf<LatLng?>(null) }
+    var selectedLocationName by remember { mutableStateOf<String?>(null) }
 
     // Initialize form with current profile data
     LaunchedEffect(uiState.profile) {
@@ -66,6 +72,67 @@ fun EditProfileScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         selectedImageUri = uri
+    }
+
+    // Google Maps place picker launcher
+    val mapPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.let { data ->
+                val latitude = data.getDoubleExtra("latitude", 0.0)
+                val longitude = data.getDoubleExtra("longitude", 0.0)
+                val placeName = data.getStringExtra("place_name")
+
+                if (latitude != 0.0 && longitude != 0.0) {
+                    selectedLatLng = LatLng(latitude, longitude)
+                    selectedLocationName = placeName
+
+                    // Convert coordinates to country code
+                    scope.launch {
+                        val countryCode = withContext(Dispatchers.IO) {
+                            try {
+                                val geocoder = Geocoder(context, Locale.getDefault())
+                                val addresses = geocoder.getFromLocation(latitude, longitude, 1)
+                                addresses?.firstOrNull()?.countryCode
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+                        countryCode?.let { location = it }
+                    }
+                }
+            }
+        }
+    }
+
+    // Function to open Google Maps for location selection
+    fun openMapsForLocationSelection() {
+        try {
+            // Try to use Google Maps app first
+            val mapsIntent = Intent(Intent.ACTION_VIEW).apply {
+                data = Uri.parse("geo:0,0?q=")
+                setPackage("com.google.android.apps.maps")
+            }
+
+            if (mapsIntent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(mapsIntent)
+            } else {
+                // Fallback to web maps
+                val webMapsIntent = Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse("https://maps.google.com/")
+                }
+                context.startActivity(webMapsIntent)
+            }
+        } catch (e: Exception) {
+            viewModel.setLocationError("Unable to open maps. Please enter location manually.")
+        }
+    }
+
+    // Alternative: Create a custom map picker activity
+    fun openCustomMapPicker() {
+        val intent = Intent(context, MapPickerActivity::class.java)
+        mapPickerLauncher.launch(intent)
     }
 
     // Function to get current location
@@ -292,29 +359,40 @@ fun EditProfileScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Location field with auto-detect button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.Top
+            // Location field with auto-detect and map selection buttons
+            Column(
+                modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedTextField(
                     value = location,
                     onValueChange = {
                         if (it.length <= 2) {
                             location = it.uppercase()
+                            // Clear selected map location when manually editing
+                            selectedLatLng = null
+                            selectedLocationName = null
                         }
                     },
                     label = { Text("Location (Country Code)", color = Color.Gray) },
                     placeholder = { Text("e.g., US, ID, UK", color = Color.Gray.copy(alpha = 0.7f)) },
                     supportingText = {
-                        Text(
-                            "Use ISO 3166-1 alpha-2 country codes (2 letters)",
-                            color = Color.Gray.copy(alpha = 0.7f),
-                            fontSize = 12.sp
-                        )
+                        Column {
+                            Text(
+                                "Use ISO 3166-1 alpha-2 country codes (2 letters)",
+                                color = Color.Gray.copy(alpha = 0.7f),
+                                fontSize = 12.sp
+                            )
+                            selectedLocationName?.let {
+                                Text(
+                                    "Selected: $it",
+                                    color = Color(0xFF007BFF),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
                     },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.White,
                         unfocusedTextColor = Color.White,
@@ -328,31 +406,81 @@ fun EditProfileScreen(
                     singleLine = true
                 )
 
-                // Auto-detect location button
-                Button(
-                    onClick = { handleLocationButtonClick() },
-                    modifier = Modifier
-                        .height(56.dp)
-                        .padding(top = 8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF28A745)
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    enabled = !isGettingLocation && !uiState.isLoading
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Location selection buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    if (isGettingLocation) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = "Auto-detect Location",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
+                    // Auto-detect location button
+                    Button(
+                        onClick = { handleLocationButtonClick() },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF28A745)
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        enabled = !isGettingLocation && !uiState.isLoading
+                    ) {
+                        if (isGettingLocation) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = "Auto-detect Location",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Auto",
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
+                    // Open maps button
+                    Button(
+                        onClick = { openCustomMapPicker() },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF007BFF)
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        enabled = !isGettingLocation && !uiState.isLoading
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Map,
+                                contentDescription = "Select on Map",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Map",
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
             }
