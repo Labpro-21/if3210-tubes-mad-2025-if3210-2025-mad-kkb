@@ -84,6 +84,8 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
 
                     item {
                         val chartTypes = listOf(
+                            ChartType("global", "Global Top 50", "charts/global"),
+                            ChartType("id", "Indonesia Top 10", "charts/ID"),
                             ChartType("my", "Malaysia Top 10", "charts/MY"),
                             ChartType("us", "United States Top 10", "charts/US"),
                             ChartType("uk", "United Kingdom Top 10", "charts/UK"),
@@ -167,6 +169,8 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                 Text("Charts", color = Color.White, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
                 val chartTypes = listOf(
+                    ChartType("global", "Global Top 50", "charts/global"),
+                    ChartType("id", "Indonesia Top 10", "charts/ID"),
                     ChartType("my", "Malaysia Top 10", "charts/MY"),
                     ChartType("us", "United States Top 10", "charts/US"),
                     ChartType("uk", "United Kingdom Top 10", "charts/UK"),

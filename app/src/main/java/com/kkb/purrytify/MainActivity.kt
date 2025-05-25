@@ -27,6 +27,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import com.kkb.purrytify.data.remote.ApiService
+import com.kkb.purrytify.data.repository.SongRepository
 import com.kkb.purrytify.util.MediaPlayerManager
 import com.kkb.purrytify.viewmodel.ChartViewModel
 import javax.inject.Inject
@@ -38,8 +39,13 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var apiService: ApiService
 
+    @Inject
+    lateinit var songRepository: SongRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        MediaPlayerManager.setSongRepository(songRepository)
 
         val context = this
         lifecycleScope.launch {

@@ -6,8 +6,15 @@ import android.media.MediaPlayer
 import android.net.Uri
 import android.util.Log
 import com.kkb.purrytify.UserSong
+import com.kkb.purrytify.data.repository.SongRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 
 object MediaPlayerManager {
     private var mediaPlayer: MediaPlayer? = null
@@ -21,6 +28,13 @@ object MediaPlayerManager {
     private var songList = listOf<UserSong>()
     private var currentIndex = -1
 
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+
+    private var timeListenedJob: Job? = null
+    private var lastReportedSeconds: Long = 0
+
+    private var songRepository: SongRepository? = null
+
     fun setPlaylist(songs: List<UserSong>, startIndex: Int) {
         songList = songs
         currentIndex = startIndex
@@ -28,6 +42,24 @@ object MediaPlayerManager {
 //        Log.d("media songs", currentIndex.toString())
         if (startIndex >= 0 && startIndex < songs.size) {
             _currentSong.value = songs[startIndex]
+        }
+    }
+
+    fun setSongRepository(repository: SongRepository) {
+        songRepository = repository
+    }
+
+    private fun updateLastPlayed(songId: Int, userId: Int) {
+        songRepository?.let { repository ->
+            coroutineScope.launch {
+                try {
+                    repository.updateLastPlayed(songId, userId, LocalDateTime.now())
+                    Log.d("MediaPlayerManager", "Updated last played time for song $songId for user id $userId at ${LocalDateTime.now()}")
+//                    Log.d("MediaPlayerManager", repository.getUserSongsByUserId(userId).toString())
+                } catch (e: Exception) {
+                    Log.e("MediaPlayerManager", "Failed to update last played time: ${e.message}")
+                }
+            }
         }
     }
 
@@ -80,6 +112,12 @@ object MediaPlayerManager {
                     start()
                     _isPlaying.value = true
                     Log.d("MediaPlayerManager", "Playback started from beginning")
+                    song.userId?.let { userId ->
+                        updateLastPlayed(song.songId, userId)
+                    }
+
+                    startTimeListenedTracking(song.songId)
+
                     // Show notification with playing state
                     NotificationUtil.showMusicNotification(context, song, true)
                     onSongStarted?.invoke(song.songId)
@@ -101,6 +139,38 @@ object MediaPlayerManager {
         } catch (e: Exception) {
             onError(e)
             Log.e("MediaPlayerManager", "Playback failed: ${e.message}")
+        }
+    }
+
+    private fun startTimeListenedTracking(songId: Int) {
+        timeListenedJob?.cancel()
+        lastReportedSeconds = 0L
+
+        timeListenedJob = coroutineScope.launch {
+            while (isPlaying.value && mediaPlayer != null) {
+                val player = mediaPlayer
+                if (player != null && player.isPlaying) {
+                    val currentSeconds = player.currentPosition / 1000L
+                    if (currentSeconds > lastReportedSeconds) {
+                        val delta = currentSeconds - lastReportedSeconds
+                        if (delta > 0) {
+                            try {
+                                songRepository?.let { repository ->
+                                    currentSong.value?.userId?.let { userId ->
+                                        repository.updateTimeListened(songId, userId, delta)
+                                        lastReportedSeconds = currentSeconds
+                                        Log.d("MediaPlayerManager", "Updated time listened: +$delta seconds, total: $lastReportedSeconds seconds")
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                Log.e("MediaPlayerManager", "Error updating time listened: ${e.message}", e)
+                                // Don't update lastReportedSeconds if update failed, so we can try again
+                            }
+                        }
+                    }
+                }
+                delay(3000)
+            }
         }
     }
 
