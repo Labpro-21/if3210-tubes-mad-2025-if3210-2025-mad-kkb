@@ -124,12 +124,7 @@ object MediaPlayerManager {
                 }
 
                 setOnCompletionListener {
-                    if (currentIndex >= 0 && currentIndex < songList.size - 1) {
-                        // Auto-play next song
-                        next(context)
-                    } else {
-                        stop(context)
-                    }
+                    next(context)
                 }
 
                 prepareAsync()

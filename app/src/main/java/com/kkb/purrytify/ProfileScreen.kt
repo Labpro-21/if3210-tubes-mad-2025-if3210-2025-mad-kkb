@@ -37,6 +37,7 @@ import com.kkb.purrytify.components.SoundCapsule
 import com.kkb.purrytify.util.PdfExporter
 import com.kkb.purrytify.viewmodel.ProfileViewModel
 import com.kkb.purrytify.viewmodel.SongViewModel
+import androidx.compose.material.icons.filled.Download
 import java.time.format.DateTimeFormatter
 import java.time.LocalDate
 import java.util.*
@@ -247,7 +248,7 @@ fun ProfileScreen(
                             }
                         }) {
                             Icon(
-                                imageVector = Icons.Default.Share,
+                                imageVector = Icons.Default.Download,
                                 contentDescription = "Download",
                                 tint = Color.White
                             )
