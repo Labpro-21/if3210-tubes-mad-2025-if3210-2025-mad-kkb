@@ -237,7 +237,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
         ) {
-            if (currentSong != null) {
+            if (currentSong != null && !isLandscape) {
                 MiniPlayer(
                     currentSong = currentSong!!,
                     isPlaying = isPlaying,
@@ -255,7 +255,21 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                     onNext = { /* Implement next song logic */ },
                     onClick = {
                         val song = currentSong!!
-                        navController.navigate("track/${song.songId}")
+                        if (song.userId == 0) {
+                            val chartSongs = chartViewModel.chartSongs.value
+                            val currentChartType = chartViewModel.currentChartType.value.lowercase()
+                            Log.d("chartype",currentChartType)
+                            if (chartSongs.isEmpty()) {
+                                chartViewModel.fetchChart(currentChartType)
+                            }
+
+                            val index = chartSongs.indexOfFirst { it.id == song.songId }
+                            if (index != -1) {
+                                navController.navigate("track_chart/${currentChartType}/$index")
+                            }
+                        } else {
+                            navController.navigate("track/${song.songId}")
+                        }
                     }
                 )
             }

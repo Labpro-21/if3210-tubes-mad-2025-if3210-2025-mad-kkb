@@ -2,6 +2,7 @@ package com.kkb.purrytify
 
 import android.content.Context
 import android.content.res.Configuration
+import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,6 +37,9 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpOffset
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.kkb.purrytify.util.MediaPlayerManager
+import com.kkb.purrytify.viewmodel.ChartViewModel
 
 @Composable
 fun BottomNavigationBar(
@@ -45,12 +49,15 @@ fun BottomNavigationBar(
 ) {
     val items = listOf(
         BottomNavItem.Home,
+        BottomNavItem.QrScanner,
         BottomNavItem.Library,
         BottomNavItem.Profile
     )
+    val chartViewModel: ChartViewModel = hiltViewModel()
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-
+    val currentSong by MediaPlayerManager.currentSong.collectAsState()
+    val isPlaying by MediaPlayerManager.isPlaying.collectAsState()
     var showProfileMenu by remember { mutableStateOf(false) }
     var profileIconOffset by remember { mutableStateOf(Offset.Zero) }
 
@@ -70,17 +77,26 @@ fun BottomNavigationBar(
             items.forEachIndexed { index, item ->
                 val selected = currentRoute == item.route
 
-                if (index == 1) {
-                    // Scan QR Button for landscape
-                    NavigationRow(
-                        icon = Icons.Default.QrCodeScanner,
-                        label = "Scan QR",
-                        selected = false,
-                        onClick = {
-                            // Your QR scanning logic
-                        }
-                    )
-                }
+//                if (index == 1) {
+//                    // Scan QR Button for landscape
+//                    ScanQrMenuButton(
+//                        onClick = {
+//                            Log.d("Navigation", "Clicked route: ${item.route}")
+//                            if (!selected) {
+//                                Log.d("Navigation", "Clicked route: ${item.route}")
+//                                navController.navigate(item.route)
+//                                Log.d("Navigation", "Clicked route: ${item.route}")
+//                            }
+//                        }
+////                        onScanResult = { scannedUrl ->
+////                            val songId = scannedUrl.substringAfterLast("/").toIntOrNull()
+////                            if (songId != null) {
+////                                navController.navigate("track-link/$songId")
+////                                Log.d("Navigation", "Scanned QR, navigating to track-link/$songId")
+////                            }
+////                        }
+//                    )
+//                }
 
                 if (item is BottomNavItem.Profile) {
                     Box {
@@ -90,7 +106,7 @@ fun BottomNavigationBar(
                             selected = selected,
                             onClick = {
                                 if (!selected) {
-                                    navController.navigate(item.route)
+                                    navController.navigate("qr-scan")
                                     Log.d("Navigation", "Clicked route: ${item.route}")
                                 }
                             },
@@ -126,8 +142,61 @@ fun BottomNavigationBar(
                     )
                 }
             }
+            // MiniPlayer at bottom of sidebar
+            if (currentSong != null) {
+                Divider(
+                    color = Color.Gray.copy(alpha = 0.3f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                ) {
+                    if (currentSong != null) {
+                        MiniPlayer(
+                            currentSong = currentSong!!,
+                            isPlaying = isPlaying,
+                            onPlayPause = {
+                                if (isPlaying) MediaPlayerManager.pause()
+                                else currentSong?.let { song ->
+                                    MediaPlayerManager.play(
+                                        song = song,
+                                        uri = Uri.parse(song.filePath),
+                                        contentResolver = context.contentResolver,
+                                        context = context
+                                    )
+                                }
+                            },
+                            onNext = { /* Implement next song logic */ },
+                            onClick = {
+                                val song = currentSong!!
+                                if (song.userId == 0) {
+                                    val chartSongs = chartViewModel.chartSongs.value
+                                    val currentChartType =
+                                        chartViewModel.currentChartType.value.lowercase()
+                                    Log.d("chartype", currentChartType)
+                                    if (chartSongs.isEmpty()) {
+                                        chartViewModel.fetchChart(currentChartType)
+                                    }
+
+                                    val index = chartSongs.indexOfFirst { it.id == song.songId }
+                                    if (index != -1) {
+                                        navController.navigate("track_chart/${currentChartType}/$index")
+                                    }
+                                } else {
+                                    navController.navigate("track/${song.songId}")
+                                }
+                            }
+                        )
+                    }
+                }
+            }
         }
-    }else{
+
+    } else {
         NavigationBar(
             containerColor = Color.Black,
             tonalElevation = 8.dp
@@ -135,20 +204,26 @@ fun BottomNavigationBar(
             items.forEachIndexed { index, item ->
                 val selected = currentRoute == item.route
                 // Add the Scan QR button after the Library item
-                if (index == 1) {
-                    // Scan QR Menu Button
-                    ScanQrMenuButton(
-                        onScanResult = { scannedUrl ->
-                            // Example: Extract songId from the URL and navigate
-                            val songId = scannedUrl.substringAfterLast("/").toIntOrNull()
-                            if (songId != null) {
-                                navController.navigate("track-link/$songId")
-                            } else {
-                                // Handle invalid QR (show snackbar, toast, etc.)
-                            }
-                        }
-                    )
-                }
+//                if (index == 1) {
+//                    // Scan QR Menu Button
+//                    ScanQrMenuButton(
+//                        onClick = {
+//                            if (!selected) {
+//                                navController.navigate(item.route)
+//                                Log.d("Navigation", "Clicked route: ${item.route}")
+//                            }
+//                        }
+////                        onScanResult = { scannedUrl ->
+////                            // Example: Extract songId from the URL and navigate
+////                            val songId = scannedUrl.substringAfterLast("/").toIntOrNull()
+////                            if (songId != null) {
+////                                navController.navigate("track-link/$songId")
+////                            } else {
+////                                // Handle invalid QR (show snackbar, toast, etc.)
+////                            }
+////                        }
+//                    )
+//                }
                 if (item is BottomNavItem.Profile) {
                     NavigationBarItem(
                         icon = {
