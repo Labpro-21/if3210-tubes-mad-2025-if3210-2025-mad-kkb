@@ -1,13 +1,16 @@
 package com.kkb.purrytify
 
+import android.content.res.Configuration
 import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,8 +18,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Divider
@@ -33,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -58,6 +65,9 @@ fun TopArtistScreen(
 ) {
     val viewModel = hiltViewModel<ProfileViewModel>()
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
     val userId = TokenStorage.getUserId(context)?.toIntOrNull() ?: return
     val statsState by viewModel.statsState.collectAsState()
     val chartViewModel: ChartViewModel = hiltViewModel()
@@ -81,138 +91,260 @@ fun TopArtistScreen(
     Scaffold(
         containerColor = Color.Black,
         topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
+            if(!isLandscape){
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Top artists",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Top artists",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
             }
+
         },
         bottomBar = {
-            Column {
-                if (currentSong != null) {
-                    MiniPlayer(
-                        currentSong = currentSong!!,
-                        isPlaying = isPlaying,
-                        onPlayPause = {
-                            if (isPlaying) MediaPlayerManager.pause()
-                            else currentSong?.let { song ->
-                                MediaPlayerManager.play(
-                                    song = song,
-                                    uri = Uri.parse(song.filePath),
-                                    contentResolver = context.contentResolver,
-                                    context = context
-                                )
-                            }
-                        },
-                        onNext = { /* Implement next song logic */ },
-                        onClick = {
-                            val song = currentSong!!
-                            if (song.userId == 0) {
-                                val chartSongs = chartViewModel.chartSongs.value
-                                val currentChartType = chartViewModel.currentChartType.value.lowercase()
-                                Log.d("chartype", currentChartType)
-                                if (chartSongs.isEmpty()) {
-                                    chartViewModel.fetchChart(currentChartType)
+            if(!isLandscape){
+                Column {
+                    if (currentSong != null) {
+                        MiniPlayer(
+                            currentSong = currentSong!!,
+                            isPlaying = isPlaying,
+                            onPlayPause = {
+                                if (isPlaying) MediaPlayerManager.pause()
+                                else currentSong?.let { song ->
+                                    MediaPlayerManager.play(
+                                        song = song,
+                                        uri = Uri.parse(song.filePath),
+                                        contentResolver = context.contentResolver,
+                                        context = context
+                                    )
                                 }
+                            },
+                            onNext = { /* Implement next song logic */ },
+                            onClick = {
+                                val song = currentSong!!
+                                if (song.userId == 0) {
+                                    val chartSongs = chartViewModel.chartSongs.value
+                                    val currentChartType = chartViewModel.currentChartType.value.lowercase()
+                                    Log.d("chartype", currentChartType)
+                                    if (chartSongs.isEmpty()) {
+                                        chartViewModel.fetchChart(currentChartType)
+                                    }
 
-                                val index = chartSongs.indexOfFirst { it.id == song.songId }
-                                if (index != -1) {
-                                    navController.navigate("track_chart/${currentChartType}/$index")
+                                    val index = chartSongs.indexOfFirst { it.id == song.songId }
+                                    if (index != -1) {
+                                        navController.navigate("track_chart/${currentChartType}/$index")
+                                    }
+                                } else {
+                                    navController.navigate("track/${song.songId}")
                                 }
-                            } else {
-                                navController.navigate("track/${song.songId}")
                             }
-                        }
+                        )
+                    }
+                    BottomNavigationBar(
+                        navController = navController,
+                        currentRoute = currentRoute,
+                        context = context
                     )
                 }
-                BottomNavigationBar(
-                    navController = navController,
-                    currentRoute = currentRoute,
-                    context = context
-                )
             }
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .background(Color.Black)
-                .fillMaxSize()
-        ) {
-            // Header for month and stats
-            Column(
+        if (isLandscape) {
+            Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .padding(innerPadding)
+                    .background(Color.Black)
+                    .fillMaxSize()
             ) {
-                Text(
-                    text = monthYear,
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                val annotatedText = buildAnnotatedString {
-                    append("You listened to ")
-                    withStyle(style = SpanStyle(color = Color(0xFF1DB954), fontWeight = FontWeight.Bold)) {
-                        append("$totalArtistsListened artists")
-                    }
-                    append(" this month.")
-                }
-                Text(
-                    text = annotatedText,
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 32.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (topArtists.isEmpty()) {
-                Box(
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
+                        .width(130.dp)
+                        .fillMaxHeight()
+                        .background(Color(0xFF181818))
+                        .padding(vertical = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.Start
                 ) {
-                    Text(
-                        text = "No listening data available for this month.",
-                        color = Color.Gray,
-                        fontSize = 16.sp,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 32.dp)
+                    BottomNavigationBar(
+                        navController = navController,
+                        currentRoute = currentRoute,
+                        context = context
                     )
                 }
-            } else {
-                LazyColumn {
-                    itemsIndexed(topArtists) { index, artist ->
-                        ArtistItem(index = index + 1, artist = artist)
-                        if (index < topArtists.size - 1) {
-                            Divider(
-                                color = Color.DarkGray.copy(alpha = 0.5f),
-                                thickness = 0.5.dp,
-                                modifier = Modifier.padding(horizontal = 16.dp)
+                // Left: Month & stats
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(24.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White
                             )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Top artists",
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Text(
+                        text = monthYear,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val annotatedText = buildAnnotatedString {
+                        append("You listened to ")
+                        withStyle(style = SpanStyle(color = Color(0xFF1DB954), fontWeight = FontWeight.Bold)) {
+                            append("$totalArtistsListened artists")
+                        }
+                        append(" this month.")
+                    }
+                    Text(
+                        text = annotatedText,
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 32.sp
+                    )
+                }
+                // Right: Top Artists
+                if (topArtists.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1.5f)
+                            .fillMaxHeight(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No listening data available for this month.",
+                            color = Color.Gray,
+                            fontSize = 16.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 32.dp)
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(2f)
+                            .padding(16.dp)
+                            .fillMaxHeight(),
+//                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        itemsIndexed(topArtists) { index, artist ->
+                            ArtistItem(index = index + 1, artist = artist)
+                            if (index < topArtists.size - 1) {
+                                Divider(
+                                    color = Color.DarkGray.copy(alpha = 0.5f),
+                                    thickness = 0.5.dp,
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .padding(vertical = 16.dp)
+                                        .width(1.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .background(Color.Black)
+                    .fillMaxSize()
+            ) {
+                // Header for month and stats
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                ) {
+                    Text(
+                        text = monthYear,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val annotatedText = buildAnnotatedString {
+                        append("You listened to ")
+                        withStyle(style = SpanStyle(color = Color(0xFF1DB954), fontWeight = FontWeight.Bold)) {
+                            append("$totalArtistsListened artists")
+                        }
+                        append(" this month.")
+                    }
+                    Text(
+                        text = annotatedText,
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 32.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                if (topArtists.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No listening data available for this month.",
+                            color = Color.Gray,
+                            fontSize = 16.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 32.dp)
+                        )
+                    }
+                } else {
+                    LazyColumn {
+                        itemsIndexed(topArtists) { index, artist ->
+                            ArtistItem(index = index + 1, artist = artist)
+                            if (index < topArtists.size - 1) {
+                                Divider(
+                                    color = Color.DarkGray.copy(alpha = 0.5f),
+                                    thickness = 0.5.dp,
+                                    modifier = Modifier.padding(horizontal = 16.dp)
+                                )
+                            }
                         }
                     }
                 }
