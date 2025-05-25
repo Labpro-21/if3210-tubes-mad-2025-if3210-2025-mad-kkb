@@ -131,6 +131,8 @@ fun SoundCapsule(
                         fontSize = 14.sp
                     )
 
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     if (topArtist != null) {
                         AsyncImage(
                             model = ImageRequest.Builder(context)
@@ -142,9 +144,8 @@ fun SoundCapsule(
                             modifier = Modifier
                                 .size(80.dp)
                                 .clip(CircleShape)
-                                .padding(vertical = 8.dp)
                         )
-
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = topArtist.artist,
                             color = Color(0xFF4169E1),
@@ -167,7 +168,7 @@ fun SoundCapsule(
                     .weight(1f)
                     .clip(RoundedCornerShape(8.dp))
                     .background(Color(0xFF1A1A1A))
-                    .clickable { }
+                    .clickable { navController?.navigate("top-song/$monthIndex")}
                     .padding(16.dp)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -176,6 +177,8 @@ fun SoundCapsule(
                         color = Color.Gray,
                         fontSize = 14.sp
                     )
+
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     if (topSong != null) {
                         AsyncImage(
@@ -188,9 +191,8 @@ fun SoundCapsule(
                             modifier = Modifier
                                 .size(80.dp)
                                 .clip(CircleShape)
-                                .padding(vertical = 8.dp)
                         )
-
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = topSong.title,
                             color = Color.Yellow,

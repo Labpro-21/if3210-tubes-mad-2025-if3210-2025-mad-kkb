@@ -29,10 +29,12 @@ data class ProfileUiState(
 data class MonthlySoundCapsule(
     val month: String,
     val topSong: TopSongTimeListened?,
+    val topSongs: List<TopSongTimeListened> = emptyList(),
     val topArtist: TopArtistTimeListened?,
     val topArtists: List<TopArtistTimeListened> = emptyList(),
     val totalTimeListened: Long,
     val totalArtistsListened: Int,
+    val totalSongsListened: Int,
     val dayStreakSong: DayStreakSongInfo? = null,
 )
 
@@ -104,10 +106,12 @@ class ProfileViewModel @Inject constructor(
                         MonthlySoundCapsule(
                             month = displayMonthYear,
                             topSong = topSongs.firstOrNull(),
+                            topSongs = topSongs,
                             topArtist = topArtists.firstOrNull(),
                             topArtists = topArtists,
                             totalTimeListened = totalTime,
                             totalArtistsListened = topArtists.size,
+                            totalSongsListened = topSongs.size,
                             dayStreakSong = getSongWithHighestDayStreak(userId)
                         )
                     )

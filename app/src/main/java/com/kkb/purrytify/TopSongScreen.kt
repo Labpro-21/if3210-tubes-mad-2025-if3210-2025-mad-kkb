@@ -46,12 +46,13 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.kkb.purrytify.data.dao.TopArtistTimeListened
+import com.kkb.purrytify.data.dao.TopSongTimeListened
 import com.kkb.purrytify.util.MediaPlayerManager
 import com.kkb.purrytify.viewmodel.ChartViewModel
 import com.kkb.purrytify.viewmodel.ProfileViewModel
 
 @Composable
-fun TopArtistScreen(
+fun TopSongScreen(
     navController: NavController,
     currentRoute: String,
     monthIndex: Int = 0
@@ -75,9 +76,9 @@ fun TopArtistScreen(
         statsState.monthlyCapsules[monthIndex]
     } else null
 
-    val topArtists = capsule?.topArtists ?: emptyList()
+    val topSongs = capsule?.topSongs ?: emptyList()
     val monthYear = capsule?.month ?: viewModel.currentMonthYear
-    val totalArtistsListened = capsule?.totalArtistsListened ?: 0
+    val totalSongsListened = capsule?.totalSongsListened ?: 0
 
     Scaffold(
         containerColor = Color.Black,
@@ -97,7 +98,7 @@ fun TopArtistScreen(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Top artists",
+                    text = "Top songs",
                     color = Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
@@ -156,7 +157,6 @@ fun TopArtistScreen(
                 .background(Color.Black)
                 .fillMaxSize()
         ) {
-            // Header for month and stats
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -173,8 +173,8 @@ fun TopArtistScreen(
 
                 val annotatedText = buildAnnotatedString {
                     append("You listened to ")
-                    withStyle(style = SpanStyle(color = Color(0xFF1DB954), fontWeight = FontWeight.Bold)) {
-                        append("$totalArtistsListened artists")
+                    withStyle(style = SpanStyle(color = Color.Yellow, fontWeight = FontWeight.Bold)) {
+                        append("$totalSongsListened different songs")
                     }
                     append(" this month.")
                 }
@@ -189,7 +189,7 @@ fun TopArtistScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (topArtists.isEmpty()) {
+            if (topSongs.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -206,9 +206,9 @@ fun TopArtistScreen(
                 }
             } else {
                 LazyColumn {
-                    itemsIndexed(topArtists) { index, artist ->
-                        ArtistItem(index = index + 1, artist = artist)
-                        if (index < topArtists.size - 1) {
+                    itemsIndexed(topSongs) { index, song ->
+                        SongItem(index = index + 1, song = song)
+                        if (index < topSongs.size - 1) {
                             Divider(
                                 color = Color.DarkGray.copy(alpha = 0.5f),
                                 thickness = 0.5.dp,
@@ -223,7 +223,7 @@ fun TopArtistScreen(
 }
 
 @Composable
-fun ArtistItem(index: Int, artist: TopArtistTimeListened) {
+fun SongItem(index: Int, song: TopSongTimeListened) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -246,15 +246,15 @@ fun ArtistItem(index: Int, artist: TopArtistTimeListened) {
                 .clip(CircleShape)
                 .background(Color.DarkGray)
         ) {
-            if (!artist.coverPath.isNullOrEmpty()) {
+            if (!song.coverPath.isNullOrEmpty()) {
                 Image(
                     painter = rememberAsyncImagePainter(
                         ImageRequest.Builder(LocalContext.current)
-                            .data(artist.coverPath)
+                            .data(song.coverPath)
                             .crossfade(true)
                             .build()
                     ),
-                    contentDescription = "${artist.artist} cover",
+                    contentDescription = "${song.artist} cover",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -267,14 +267,14 @@ fun ArtistItem(index: Int, artist: TopArtistTimeListened) {
             modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = artist.artist,
+                text = song.title,
                 color = Color.White,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
             )
 
             Text(
-                text = formatListeningTime(artist.totalTime),
+                text = formatListeningTime(song.timeListened),
                 color = Color.Gray,
                 fontSize = 14.sp
             )
@@ -285,7 +285,7 @@ fun ArtistItem(index: Int, artist: TopArtistTimeListened) {
 private fun formatListeningTime(timeInSeconds: Long): String {
     val hours = timeInSeconds / 3600
     val minutes = (timeInSeconds % 3600) / 60
-    
+
     return when {
         hours > 0 -> "$hours hr ${minutes} min"
         else -> "$minutes min"
