@@ -160,7 +160,7 @@ object PdfExporter {
             addCell(songsTable, "Time", true)
 
             // Add rows
-            capsule.topSongs.take(5).forEach { song ->
+            capsule.topSongs.forEach { song ->
                 addCell(songsTable, song.title)
                 addCell(songsTable, song.artist)
                 addCell(songsTable, formatTime(song.timeListened))
@@ -188,7 +188,7 @@ object PdfExporter {
             addCell(artistsTable, "Time", true)
 
             // Add rows
-            capsule.topArtists.take(5).forEach { artist ->
+            capsule.topArtists.forEach { artist ->
                 addCell(artistsTable, artist.artist)
                 addCell(artistsTable, formatTime(artist.totalTime))
             }
