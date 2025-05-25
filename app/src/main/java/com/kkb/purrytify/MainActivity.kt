@@ -85,6 +85,45 @@ class MainActivity : ComponentActivity() {
                         composable("library") {
                             LibraryScreen(navController = navController, currentRoute = "library")
                         }
+                        composable("home") {
+                            HomeScreen(navController = navController, currentRoute = "home")
+                        }
+
+                        composable(
+                            "top-artist/{monthIndex}",
+                            arguments = listOf(navArgument("monthIndex") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val monthIndex = backStackEntry.arguments?.getInt("monthIndex") ?: 0
+                            TopArtistScreen(
+                                navController = navController,
+                                currentRoute = "top-artist",
+                                monthIndex = monthIndex
+                            )
+                        }
+
+                        composable(
+                            "top-song/{monthIndex}",
+                            arguments = listOf(navArgument("monthIndex") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val monthIndex = backStackEntry.arguments?.getInt("monthIndex") ?: 0
+                            TopSongScreen(
+                                navController = navController,
+                                currentRoute = "top-song",
+                                monthIndex = monthIndex
+                            )
+                        }
+
+                        composable(
+                            "time-listened/{monthIndex}",
+                            arguments = listOf(navArgument("monthIndex") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val monthIndex = backStackEntry.arguments?.getInt("monthIndex") ?: 0
+                            TimeListenedScreen(
+                                navController = navController,
+                                currentRoute = "time-listened",
+                                monthIndex = monthIndex
+                            )
+                        }
 //                        composable("qr-scan"){
 //                            scan
 //                        }
