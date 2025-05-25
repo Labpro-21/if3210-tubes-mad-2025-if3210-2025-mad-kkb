@@ -99,6 +99,7 @@ fun BottomNavigationBar(
                             onDismiss = { showProfileMenu = false },
                             onLogout = {
                                 showProfileMenu = false
+                                MediaPlayerManager.stop(context)
                                 TokenStorage.clearToken(context)
                                 navController.navigate("login") {
                                     popUpTo("home") { inclusive = true }

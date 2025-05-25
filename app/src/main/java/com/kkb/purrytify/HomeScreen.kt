@@ -178,14 +178,14 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
 
                     item {
                         val chartTypes = listOf(
-                            ChartType("global", "Global Top 50", "charts/global"),
-                            ChartType("id", "Indonesia Top 10", "charts/ID"),
-                            ChartType("my", "Malaysia Top 10", "charts/MY"),
-                            ChartType("us", "United States Top 10", "charts/US"),
-                            ChartType("uk", "United Kingdom Top 10", "charts/UK"),
-                            ChartType("ch", "Switzerland Top 10", "charts/CH"),
-                            ChartType("de", "Germany Top 10", "charts/DE"),
-                            ChartType("br", "Brazil Top 10", "charts/BR")
+                            ChartType("global", "Global Top 50", "charts/global", R.drawable.global_chart),
+                            ChartType("id", "Indonesia Top 10", "charts/ID", R.drawable.id_chart),
+                            ChartType("my", "Malaysia Top 10", "charts/MY", R.drawable.my_chart),
+                            ChartType("us", "United States Top 10", "charts/US", R.drawable.us_chart),
+                            ChartType("uk", "United Kingdom Top 10", "charts/UK", R.drawable.uk_chart),
+                            ChartType("ch", "Switzerland Top 10", "charts/CH", R.drawable.ch_chart),
+                            ChartType("de", "Germany Top 10", "charts/DE", R.drawable.de_chart),
+                            ChartType("br", "Brazil Top 10", "charts/BR", R.drawable.br_chart)
                         )
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -206,8 +206,8 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                                         modifier = Modifier
                                             .size(100.dp)
                                             .clip(RoundedCornerShape(8.dp)),
-                                        placeholder = painterResource(R.drawable.album_placeholder),
-                                        error = painterResource(R.drawable.album_placeholder)
+                                        placeholder = painterResource(chart.cover),
+                                        error = painterResource(chart.cover)
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
@@ -285,14 +285,14 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                     Text("Charts", color = Color.White, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(8.dp))
                     val chartTypes = listOf(
-                        ChartType("global", "Global Top 50", "charts/global"),
-                        ChartType("id", "Indonesia Top 10", "charts/ID"),
-                        ChartType("my", "Malaysia Top 10", "charts/MY"),
-                        ChartType("us", "United States Top 10", "charts/US"),
-                        ChartType("uk", "United Kingdom Top 10", "charts/UK"),
-                        ChartType("ch", "Switzerland Top 10", "charts/CH"),
-                        ChartType("de", "Germany Top 10", "charts/DE"),
-                        ChartType("br", "Brazil Top 10", "charts/BR")
+                        ChartType("global", "Global Top 50", "charts/global", R.drawable.global_chart),
+                        ChartType("id", "Indonesia Top 10", "charts/ID", R.drawable.id_chart),
+                        ChartType("my", "Malaysia Top 10", "charts/MY", R.drawable.my_chart),
+                        ChartType("us", "United States Top 10", "charts/US", R.drawable.us_chart),
+                        ChartType("uk", "United Kingdom Top 10", "charts/UK", R.drawable.uk_chart),
+                        ChartType("ch", "Switzerland Top 10", "charts/CH", R.drawable.ch_chart),
+                        ChartType("de", "Germany Top 10", "charts/DE", R.drawable.de_chart),
+                        ChartType("br", "Brazil Top 10", "charts/BR", R.drawable.br_chart)
                     )
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -313,8 +313,8 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
                                     modifier = Modifier
                                         .size(100.dp)
                                         .clip(RoundedCornerShape(8.dp)),
-                                    placeholder = painterResource(R.drawable.album_placeholder),
-                                    error = painterResource(R.drawable.album_placeholder)
+                                    placeholder = painterResource(chart.cover),
+                                    error = painterResource(chart.cover)
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
@@ -445,6 +445,7 @@ private fun NavigationItem(
 private data class ChartType(
     val id: String,
     val title: String,
-    val route: String
+    val route: String,
+    @DrawableRes val cover: Int
 )
 

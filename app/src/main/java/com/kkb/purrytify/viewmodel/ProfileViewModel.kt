@@ -165,7 +165,6 @@ class ProfileViewModel @Inject constructor(
 
     private suspend fun getSongWithHighestDayStreak(userId: Int): DayStreakSongInfo? {
         val allSongPlays = dailySongPlaysDao.getSongPlayHistory(userId)
-        
         var maxStreak = 0
         var bestSongId = -1
         var bestSongInfo: SongPlayDateInfo? = null
@@ -178,7 +177,6 @@ class ProfileViewModel @Inject constructor(
                 .sorted()
                 
             if (songDates.isEmpty()) continue
-
             val streak = calculateDayStreak(songDates)
 
             if (streak > maxStreak) {
