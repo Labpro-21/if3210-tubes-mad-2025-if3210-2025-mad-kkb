@@ -3,7 +3,7 @@ package com.kkb.purrytify
 import android.content.Context
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
-import android.media.MediaRouter
+import android.media.MediaPlayer
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -33,7 +33,8 @@ data class AudioDeviceOption(
     val id: Int,
     val name: String,
     val type: Int,
-    val isDefault: Boolean = false
+    val isDefault: Boolean = false,
+    val deviceInfo: AudioDeviceInfo? = null // Tambahkan referensi device asli
 )
 
 @Composable
@@ -56,7 +57,7 @@ fun MiniPlayer(
     // Initialize audio devices
     LaunchedEffect(Unit) {
         audioDevices = getAvailableAudioDevices(context)
-        selectedDeviceId = getCurrentAudioDevice(context)
+        selectedDeviceId = getCurrentAudioDevice(context, audioDevices)
     }
 
     // Update progress while playing
@@ -134,7 +135,7 @@ fun MiniPlayer(
                 // Audio output selector button
                 IconButton(onClick = {
                     audioDevices = getAvailableAudioDevices(context)
-                    selectedDeviceId = getCurrentAudioDevice(context)
+                    selectedDeviceId = getCurrentAudioDevice(context, audioDevices)
                     showAudioDeviceMenu = true
                 }) {
                     Icon(
@@ -190,8 +191,12 @@ fun MiniPlayer(
                 devices = audioDevices,
                 selectedDeviceId = selectedDeviceId,
                 onDeviceSelected = { deviceId ->
-                    selectedDeviceId = deviceId
-                    setAudioOutputDevice(context, deviceId, audioDevices)
+                    val success = setAudioOutputDevice(context, deviceId, audioDevices)
+                    if (success) {
+                        selectedDeviceId = deviceId
+                        // Re-apply audio routing to MediaPlayer
+                        applyAudioRoutingToMediaPlayer(context, deviceId, audioDevices)
+                    }
                     showAudioDeviceMenu = false
                 },
                 onDismiss = { showAudioDeviceMenu = false }
@@ -305,17 +310,6 @@ fun getAvailableAudioDevices(context: Context): List<AudioDeviceOption> {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val audioDevices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
 
-            // Add phone speaker as default
-            val hasBuiltinSpeaker = audioDevices.any { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
-            if (!hasBuiltinSpeaker) {
-                devices.add(AudioDeviceOption(
-                    id = -1,
-                    name = "Phone Speaker",
-                    type = AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
-                    isDefault = true
-                ))
-            }
-
             audioDevices.forEach { device ->
                 when (device.type) {
                     AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
@@ -326,18 +320,30 @@ fun getAvailableAudioDevices(context: Context): List<AudioDeviceOption> {
                     AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
                     AudioDeviceInfo.TYPE_USB_HEADSET,
                     AudioDeviceInfo.TYPE_USB_DEVICE -> {
-                        val deviceName = device.productName?.toString() ?: getDefaultDeviceName(device.type)
+                        val deviceName = device.productName?.toString()
+                            ?: getDefaultDeviceName(device.type)
                         devices.add(AudioDeviceOption(
                             id = device.id,
                             name = deviceName,
                             type = device.type,
-                            isDefault = device.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+                            isDefault = device.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
+                            deviceInfo = device
                         ))
                     }
                 }
             }
+
+            // Tambahkan fallback jika tidak ada speaker built-in
+            if (!devices.any { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }) {
+                devices.add(AudioDeviceOption(
+                    id = -1,
+                    name = "Phone Speaker",
+                    type = AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
+                    isDefault = true
+                ))
+            }
         } else {
-            // Fallback for older Android versions
+            // Fallback untuk Android versi lama
             devices.add(AudioDeviceOption(
                 id = -1,
                 name = "Phone Speaker",
@@ -362,7 +368,7 @@ fun getAvailableAudioDevices(context: Context): List<AudioDeviceOption> {
             }
         }
     } catch (e: Exception) {
-        // Fallback in case of any errors
+        // Fallback jika terjadi error
         devices.clear()
         devices.add(AudioDeviceOption(
             id = -1,
@@ -372,7 +378,7 @@ fun getAvailableAudioDevices(context: Context): List<AudioDeviceOption> {
         ))
     }
 
-    return devices.distinctBy { it.name }
+    return devices.distinctBy { "${it.name}_${it.type}" }
 }
 
 fun getDefaultDeviceName(deviceType: Int): String {
@@ -389,87 +395,114 @@ fun getDefaultDeviceName(deviceType: Int): String {
     }
 }
 
-fun getCurrentAudioDevice(context: Context): Int {
+fun getCurrentAudioDevice(context: Context, devices: List<AudioDeviceOption>): Int {
     val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
-    return when {
-        audioManager.isBluetoothA2dpOn -> -3
-        audioManager.isWiredHeadsetOn -> -2
-        else -> -1
-    }
-}
-
-fun setAudioOutputDevice(context: Context, deviceId: Int, devices: List<AudioDeviceOption>) {
-    val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-
-    try {
-        when (deviceId) {
-            -1 -> {
-                // Phone speaker
-                audioManager.isSpeakerphoneOn = true
-                audioManager.isBluetoothScoOn = false
-                audioManager.mode = AudioManager.MODE_NORMAL
+    return try {
+        when {
+            audioManager.isBluetoothA2dpOn -> {
+                devices.find { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP }?.id ?: -3
             }
-            -2 -> {
-                // Wired headset (legacy)
-                audioManager.isSpeakerphoneOn = false
-                audioManager.isBluetoothScoOn = false
-                audioManager.mode = AudioManager.MODE_NORMAL
-            }
-            -3 -> {
-                // Bluetooth (legacy)
-                audioManager.startBluetoothSco()
-                audioManager.isBluetoothScoOn = true
-                audioManager.isSpeakerphoneOn = false
+            audioManager.isWiredHeadsetOn -> {
+                devices.find {
+                    it.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
+                            it.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES
+                }?.id ?: -2
             }
             else -> {
-                // Modern API (Android M+)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    val selectedDevice = devices.find { it.id == deviceId }
-                    selectedDevice?.let { device ->
-                        when (device.type) {
-                            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> {
-                                audioManager.isSpeakerphoneOn = true
-                                audioManager.isBluetoothScoOn = false
-                                audioManager.mode = AudioManager.MODE_NORMAL
-                            }
-                            AudioDeviceInfo.TYPE_WIRED_HEADSET,
-                            AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
-                            AudioDeviceInfo.TYPE_USB_HEADSET,
-                            AudioDeviceInfo.TYPE_USB_DEVICE -> {
-                                audioManager.isSpeakerphoneOn = false
-                                audioManager.isBluetoothScoOn = false
-                                audioManager.mode = AudioManager.MODE_NORMAL
-                            }
-                            AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
-                            AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> {
-                                audioManager.startBluetoothSco()
-                                audioManager.isBluetoothScoOn = true
-                                audioManager.isSpeakerphoneOn = false
-                            }
-                            else -> {
-                                audioManager.isSpeakerphoneOn = true
-                                audioManager.mode = AudioManager.MODE_NORMAL
-                            }
-                        }
-
-                        // For Android 12+ (API 31+), we could use AudioDeviceInfo.TYPE_REMOTE_SUBMIX
-                        // and more advanced routing, but this requires additional permissions
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            // Could implement more advanced audio routing here
-                        }
-                    }
-                }
+                devices.find { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }?.id ?: -1
             }
         }
     } catch (e: Exception) {
-        // Handle any security exceptions or other errors
-        // Fall back to default speaker
+        -1 // Default ke speaker
+    }
+}
+
+fun setAudioOutputDevice(context: Context, deviceId: Int, devices: List<AudioDeviceOption>): Boolean {
+    val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+    return try {
+        val selectedDevice = devices.find { it.id == deviceId }
+
+        if (selectedDevice == null) {
+            // Fallback ke speaker default
+            audioManager.isSpeakerphoneOn = true
+            audioManager.isBluetoothScoOn = false
+            audioManager.mode = AudioManager.MODE_NORMAL
+            return true
+        }
+
+        // Reset semua audio routing terlebih dahulu
+        audioManager.isSpeakerphoneOn = false
+        audioManager.isBluetoothScoOn = false
+        audioManager.stopBluetoothSco()
+
+        when (selectedDevice.type) {
+            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> {
+                audioManager.isSpeakerphoneOn = true
+                audioManager.mode = AudioManager.MODE_NORMAL
+            }
+            AudioDeviceInfo.TYPE_WIRED_HEADSET,
+            AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> {
+                audioManager.mode = AudioManager.MODE_NORMAL
+                // Wired headset biasanya otomatis terdeteksi
+            }
+            AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> {
+                audioManager.mode = AudioManager.MODE_NORMAL
+                // A2DP biasanya handle otomatis oleh system
+            }
+            AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> {
+                audioManager.startBluetoothSco()
+                audioManager.isBluetoothScoOn = true
+                audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+            }
+            AudioDeviceInfo.TYPE_USB_HEADSET,
+            AudioDeviceInfo.TYPE_USB_DEVICE -> {
+                audioManager.mode = AudioManager.MODE_NORMAL
+                // USB audio biasanya handle otomatis
+            }
+            else -> {
+                audioManager.isSpeakerphoneOn = true
+                audioManager.mode = AudioManager.MODE_NORMAL
+            }
+        }
+
+        // Untuk Android API 23+ gunakan preferred device jika tersedia
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && selectedDevice.deviceInfo != null) {
+            try {
+                // Ini memerlukan MediaPlayer instance yang aktif
+                val player = MediaPlayerManager.getPlayer()
+                if (player != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    player.setPreferredDevice(selectedDevice.deviceInfo)
+                }
+            } catch (e: Exception) {
+                // Fallback jika setPreferredDevice gagal
+            }
+        }
+
+        true
+    } catch (e: Exception) {
+        // Log error dan fallback ke speaker
         try {
             audioManager.isSpeakerphoneOn = true
             audioManager.mode = AudioManager.MODE_NORMAL
         } catch (fallbackException: Exception) {
-            // Log error if needed
+            // Ignore fallback errors
         }
+        false
+    }
+}
+
+fun applyAudioRoutingToMediaPlayer(context: Context, deviceId: Int, devices: List<AudioDeviceOption>) {
+    try {
+        val player = MediaPlayerManager.getPlayer()
+        if (player != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val selectedDevice = devices.find { it.id == deviceId }
+            selectedDevice?.deviceInfo?.let { deviceInfo ->
+                player.setPreferredDevice(deviceInfo)
+            }
+        }
+    } catch (e: Exception) {
+        // Handle error - MediaPlayer mungkin belum siap
     }
 }
