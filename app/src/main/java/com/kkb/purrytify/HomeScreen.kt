@@ -71,7 +71,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
     ) {
         val rec = mutableListOf<UserSong>()
 
-// 1. Add top song if available
+        // 1. Add top song if available
         topSong?.let { ts ->
             val song = songs.find { it.title.equals(ts.title, true) && it.artist.equals(ts.artist, true) }
             if (song != null) rec += song
@@ -81,7 +81,7 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
             }
         }
 
-// 2. Add top artist's other songs (as UserSong)
+        // 2. Add top artist's songs
         topArtist?.let { ta ->
             val artistSongsLocal = songs.filter { it.artist.equals(ta.artist, true) }
                 .filterNot { rec.any { r -> r.songId == it.songId } }
@@ -93,7 +93,6 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
             rec += artistSongsServer.map { it.toUserSong() }
         }
 
-// 3. Add liked, recently played, etc... (all as UserSong)
         rec += likedSongs.filterNot { s -> rec.any { it.songId == s.songId } }.take(2)
         rec += recentlyPlayedSongs.filterNot { s -> rec.any { it.songId == s.songId } }.take(2)
 
@@ -103,12 +102,17 @@ fun HomeScreen(navController: NavController, currentRoute: String) {
         }.take(2)
         rec += serverArtistSongs.map { it.toUserSong() }
 
+        // Fallback: fill to 10
         val fallbackServerSongs = serverSongs.filter { chartSong ->
             rec.none { r -> r.title.equals(chartSong.title, true) && r.artist.equals(chartSong.artist, true) }
-        }.take(10 - rec.size)
-        rec += fallbackServerSongs.map { it.toUserSong() }
+        }.map { it.toUserSong() }
 
-// Limit to max 10, remove duplicates by id
+        var i = 0
+        while (rec.size < 10 && i < fallbackServerSongs.size) {
+            rec += fallbackServerSongs[i]
+            i++
+        }
+
         rec.distinctBy { it.songId }.take(10)
     }
     LaunchedEffect(recommendedSongs) {
