@@ -83,6 +83,25 @@ class MainActivity : ComponentActivity() {
                         composable("library") {
                             LibraryScreen(navController = navController, currentRoute = "library")
                         }
+                        composable("home") {
+                            HomeScreen(navController = navController, currentRoute = "home")
+                        }
+
+                        composable(
+                            "top-artist/{monthIndex}",
+                            arguments = listOf(navArgument("monthIndex") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val monthIndex = backStackEntry.arguments?.getInt("monthIndex") ?: 0
+                            TopArtistScreen(
+                                navController = navController,
+                                currentRoute = "top-artist",
+                                monthIndex = monthIndex
+                            )
+                        }
+
+                        composable("top-artist") {
+                            TopArtistScreen(navController = navController, currentRoute = "top-artist")
+                        }
 //                        composable("qr-scan"){
 //                            scan
 //                        }

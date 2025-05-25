@@ -24,30 +24,38 @@ interface UserSongDao {
 
     @Query("UPDATE UserSongs SET timeListened = :timeListened WHERE userId = :userId AND songId = :songId")
     suspend fun updateTimeListened(userId: Int, songId: Int, timeListened: Long)
-    
-    @Query("""
-        SELECT s.id, s.title, s.artist, s.filePath, s.coverPath, u.timeListened
-        FROM UserSongs u
-        INNER JOIN songs s ON u.songId = s.id
-        WHERE u.userId = :userId
-        ORDER BY u.timeListened DESC
-        LIMIT 1
-    """)
-    suspend fun getTopSongByTimeListened(userId: Int): TopSongTimeListened?
 
     @Query("""
-        SELECT s.artist, SUM(u.timeListened) as totalTime
+        SELECT s.id, s.title, s.artist, s.filePath, s.coverPath, SUM(u.timeListened) as timeListened
         FROM UserSongs u
         INNER JOIN songs s ON u.songId = s.id
-        WHERE u.userId = :userId
+        WHERE u.userId = :userId 
+        AND strftime('%m-%Y', datetime(u.lastPlayed/1000, 'unixepoch')) = :monthYear
+        AND u.timeListened > 0
+        GROUP BY s.id
+        ORDER BY timeListened DESC
+    """)
+    suspend fun getTopSongByTimeListenedForMonth(userId: Int, monthYear: String): List<TopSongTimeListened>
+
+    @Query("""
+        SELECT s.artist, s.coverPath, SUM(u.timeListened) as totalTime
+        FROM UserSongs u
+        INNER JOIN songs s ON u.songId = s.id
+        WHERE u.userId = :userId 
+        AND strftime('%m-%Y', datetime(u.lastPlayed/1000, 'unixepoch')) = :monthYear
+        AND u.timeListened > 0
         GROUP BY s.artist
         ORDER BY totalTime DESC
-        LIMIT :limit
     """)
-    suspend fun getTopArtistsByTimeListened(userId: Int, limit: Int = 1): List<TopArtistTimeListened>
+    suspend fun getTopArtistsByTimeListenedForMonth(userId: Int, monthYear: String): List<TopArtistTimeListened>
 
-    @Query("SELECT SUM(timeListened) FROM UserSongs WHERE userId = :userId")
-    suspend fun getUserTotalTimeListened(userId: Int): Long?
+    @Query("""
+        SELECT SUM(timeListened) 
+        FROM UserSongs 
+        WHERE userId = :userId 
+        AND strftime('%m-%Y', datetime(lastPlayed/1000, 'unixepoch')) = :monthYear
+    """)
+    suspend fun getUserTotalTimeListenedForMonth(userId: Int, monthYear: String): Long?
 
     @Query("""
         SELECT s.id, s.title, s.artist, s.filePath, s.coverPath, u.lastPlayed
@@ -64,6 +72,7 @@ interface UserSongDao {
 
 data class TopArtistTimeListened(
     val artist: String,
+    val coverPath: String?,
     val totalTime: Long
 )
 
