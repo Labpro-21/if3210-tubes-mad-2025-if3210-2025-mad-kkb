@@ -2,11 +2,13 @@ package com.kkb.purrytify.data.model
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Entity(
-    tableName = "UserSongs",
+    tableName = "DailySongPlays",
     foreignKeys = [
         ForeignKey(
             entity = Song::class,
@@ -14,12 +16,12 @@ import java.time.LocalDateTime
             childColumns = ["songId"],
             onDelete = ForeignKey.CASCADE
         )
-    ])
-data class UserSongs(
+    ],
+)
+data class DailySongPlays(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val userId: Int,
     val songId: Int,
-    val createdAt: LocalDateTime,
-    val lastPlayed: LocalDateTime?,
-    val isLiked: Boolean
+    val date: LocalDate,
+    val timeListened: Long = 0L
 )

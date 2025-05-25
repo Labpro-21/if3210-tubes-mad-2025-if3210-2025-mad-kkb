@@ -64,7 +64,7 @@ fun TrackScreen(
     }
 
     val song = currentSong!!
-
+    
     LaunchedEffect(Unit) {
         val currentPlayingSong = MediaPlayerManager.getCurrentSong()
         if (currentPlayingSong?.songId != song.songId || !isPlayerPlaying) {

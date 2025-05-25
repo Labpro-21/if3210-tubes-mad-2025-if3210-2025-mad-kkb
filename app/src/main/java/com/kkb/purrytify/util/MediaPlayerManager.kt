@@ -41,6 +41,7 @@ object MediaPlayerManager {
         onSongStarted: ((Int) -> Unit)? = null
     ) {
         try {
+
             val isResuming = _currentSong.value?.songId == song.songId && currentPosition > 0
 //            Log.d("playingsong", song.toString())
             if (isResuming) {

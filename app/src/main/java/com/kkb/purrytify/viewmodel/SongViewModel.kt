@@ -6,9 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kkb.purrytify.TokenStorage
 import com.kkb.purrytify.UserSong
+import com.kkb.purrytify.data.dao.DailySongPlaysDao
 import com.kkb.purrytify.data.dao.SongDao
 import com.kkb.purrytify.data.dao.UserSongDao
 import com.kkb.purrytify.data.model.ChartSong
+import com.kkb.purrytify.data.model.DailySongPlays
 import com.kkb.purrytify.data.model.Song
 import com.kkb.purrytify.data.model.UserSongs
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,10 +21,13 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import javax.inject.Inject
 import com.kkb.purrytify.data.remote.ApiService
+import java.time.LocalDate
+
 @HiltViewModel
 class SongViewModel @Inject constructor(
     private val songDao: SongDao,
     private val userSongDao: UserSongDao,
+    private val dailySongPlaysDao: DailySongPlaysDao,
     private val apiService: ApiService,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
@@ -121,6 +126,7 @@ class SongViewModel @Inject constructor(
                         if (it.songId == songId) it.copy(lastPlayed = LocalDateTime.now()) else it
                     }
                 }
+                Log.d("SongViewModel", "updateLastPlayed success")
             } else {
                 Log.e("SongViewModel", "updateLastPlayed failed: userId is null")
             }
@@ -196,22 +202,30 @@ class SongViewModel @Inject constructor(
         }
     }
 
-     fun updateTimeListened(songId: Int, additionalSeconds: Long) {
+    fun updateTimeListened(songId: Int, additionalSeconds: Long) {
         viewModelScope.launch(Dispatchers.IO) {
             val userId = TokenStorage.getUserId(context)?.toIntOrNull()
             if (userId != null) {
-                val userSongs = userSongDao.getUserSongsByUserId(userId)
-                val userSong = userSongs.find { it.songId == songId }
-                if (userSong != null) {
-                    val newTimeListened = userSong.timeListened + additionalSeconds
-                    Log.d("time song", newTimeListened.toString())
-                    userSongDao.updateTimeListened(userId, songId, newTimeListened)
-                    // Update state in memory for instant feedback
-                    _userSongs.update { list ->
-                        list.map {
-                            if (it.songId == songId) it.copy(timeListened = newTimeListened) else it
-                        }
+                try {
+                    val dailySongPlays = dailySongPlaysDao.getUserSongsByUserIdDate(userId,
+                        LocalDate.now())
+                    val dailySongPlay = dailySongPlays.find { it.songId == songId }
+                    
+                    if (dailySongPlay != null) {
+                        val newTimeListened = dailySongPlay.timeListened + additionalSeconds
+                        dailySongPlaysDao.updateTimeListened(userId, songId, newTimeListened)
+                    } else {
+                        val newDailySongPlay = DailySongPlays(
+                            userId = userId,
+                            songId = songId,
+                            date = LocalDate.now(),
+                            timeListened = additionalSeconds
+                        )
+                        dailySongPlaysDao.insert(newDailySongPlay)
                     }
+
+                } catch (e: Exception) {
+                    Log.e("SongViewModel", "Error updating time listened: ${e.message}")
                 }
             } else {
                 Log.e("SongViewModel", "updateTimeListened failed: userId is null")

@@ -19,6 +19,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
 import android.util.Log
+import com.kkb.purrytify.data.dao.DailySongPlaysDao
 import com.kkb.purrytify.data.dao.DailyTimeListened
 
 data class ProfileUiState(
@@ -47,7 +48,8 @@ data class ProfileStatsUiState(
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val apiService: ApiService,
-    private val userSongDao: UserSongDao
+    private val userSongDao: UserSongDao,
+    private val dailySongPlaysDao: DailySongPlaysDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -89,21 +91,23 @@ class ProfileViewModel @Inject constructor(
 
     fun fetchMonthlySoundCapsules(userId: Int) {
         viewModelScope.launch(Dispatchers.IO) {
-            // Get current and previous months (up to 6 months)
             val formatter = DateTimeFormatter.ofPattern("MM-yyyy")
             val monthsCapsules = mutableListOf<MonthlySoundCapsule>()
-
+            val dayStreakSong = getSongWithHighestDayStreak(userId)
             for (i in 0..5) {
                 val monthDate = LocalDate.now().minusMonths(i.toLong())
                 val monthYearStr = formatter.format(monthDate)
                 val displayMonthYear = monthYearFormatter.format(monthDate)
 
-                val topSongs = userSongDao.getTopSongByTimeListenedForMonth(userId, monthYearStr)
-                val topArtists = userSongDao.getTopArtistsByTimeListenedForMonth(userId, monthYearStr)
-                val totalTime = userSongDao.getUserTotalTimeListenedForMonth(userId, monthYearStr) ?: 0L
-                val dailyTime = userSongDao.getDailyTimeListenedInMonth(userId,monthYearStr)
-                val dayStreakSong = getSongWithHighestDayStreak(userId)
-                Log.d("topArtists", topArtists.toString())
+                val topSongs = dailySongPlaysDao.getTopSongByTimeListenedForMonth(userId, monthYearStr)
+                val topArtists = dailySongPlaysDao.getTopArtistsByTimeListenedForMonth(userId, monthYearStr)
+                val totalTime = dailySongPlaysDao.getUserTotalTimeListenedForMonth(userId, monthYearStr) ?: 0L
+                val dailyTime = dailySongPlaysDao.getDailyTimeListenedInMonth(userId, monthYearStr)
+
+//                val dayStreakSong = getSongWithHighestDayStreak(userId)
+                
+                Log.d("ProfileViewModel", "Month: $displayMonthYear, Artists: ${topArtists.size}, Songs: ${topSongs.size}")
+                
                 if (totalTime > 0) {
                     monthsCapsules.add(
                         MonthlySoundCapsule(
@@ -116,7 +120,7 @@ class ProfileViewModel @Inject constructor(
                             dailyTime = dailyTime,
                             totalArtistsListened = topArtists.size,
                             totalSongsListened = topSongs.size,
-                            dayStreakSong = getSongWithHighestDayStreak(userId)
+                            dayStreakSong = dayStreakSong
                         )
                     )
                 }
@@ -136,36 +140,58 @@ class ProfileViewModel @Inject constructor(
 
     private fun calculateDayStreak(dates: List<LocalDate>): Int {
         if (dates.isEmpty()) return 0
-        val sorted = dates.distinct().sortedDescending()
+        
+        val today = LocalDate.now()
+        val sortedDates = dates.distinct().sortedDescending()
+
+        if (sortedDates.first() != today && sortedDates.first() != today.minusDays(1)) {
+            return 0
+        }
+        
         var streak = 1
-        var prev = sorted.first()
-        for (date in sorted.drop(1)) {
-            if (prev.minusDays(1) == date) {
+        var previousDate = sortedDates.first()
+
+        for (date in sortedDates.drop(1)) {
+            if (previousDate.minusDays(1) == date) {
                 streak++
-                prev = date
+                previousDate = date
             } else {
                 break
             }
         }
-        // Only count streak if it includes today
-        return if (sorted.first() == LocalDate.now()) streak else 0
+        
+        return streak
     }
 
     private suspend fun getSongWithHighestDayStreak(userId: Int): DayStreakSongInfo? {
-        val playInfos = userSongDao.getSongsWithPlayDates(userId)
+        val allSongPlays = dailySongPlaysDao.getSongPlayHistory(userId)
+        
         var maxStreak = 0
-        var bestSong: SongPlayDateInfo? = null
+        var bestSongId = -1
+        var bestSongInfo: SongPlayDateInfo? = null
 
-        for (info in playInfos) {
-            val lastPlayed = info.lastPlayed?.toLocalDate() ?: continue
-            val streak = calculateDayStreak(listOf(lastPlayed))
+        for (songId in allSongPlays.map { it.songId }.distinct()) {
+            val songDates = allSongPlays
+                .filter { it.songId == songId && it.timeListened > 0 }
+                .map { it.date }
+                .distinct()
+                .sorted()
+                
+            if (songDates.isEmpty()) continue
+
+            val streak = calculateDayStreak(songDates)
+
             if (streak > maxStreak) {
                 maxStreak = streak
-                bestSong = info
+                bestSongId = songId
             }
         }
 
-        return bestSong?.let {
+        if (bestSongId != -1 && maxStreak > 0) {
+            bestSongInfo = userSongDao.getSongById(bestSongId)
+        }
+        
+        return bestSongInfo?.let {
             DayStreakSongInfo(
                 id = it.id,
                 title = it.title,

@@ -2,6 +2,7 @@ package com.kkb.purrytify.module
 
 import android.content.Context
 import androidx.room.Room
+import com.kkb.purrytify.data.dao.DailySongPlaysDao
 import com.kkb.purrytify.data.database.AppDatabase
 import com.kkb.purrytify.data.dao.SongDao
 import com.kkb.purrytify.data.dao.LikeDao
@@ -43,5 +44,11 @@ object RoomModule {
     @Singleton
     fun provideUserSongDao(appDatabase: AppDatabase): UserSongDao {
         return appDatabase.userSongDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideDailySongPlaysDao(appDatabase: AppDatabase): DailySongPlaysDao {
+        return appDatabase.dailySongPlaysDao()
     }
 }
