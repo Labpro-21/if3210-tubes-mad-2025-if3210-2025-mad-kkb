@@ -418,109 +418,66 @@ private fun ProfileContent(
             modifier = Modifier.padding(16.dp)
         )
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        ) {
-            // Time Listened
+        if (statsState.monthlyCapsules.isEmpty()) {
+            // No capsules to show
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
-                    .padding(16.dp)
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Column {
-                    Text(
-                        text = "Time Listened",
-                        color = Color.Gray,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = formatTime(statsState.monthlyCapsules[0].totalTimeListened),
-                        color = Color.White,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                Text(
+                    text = "No listening history yet",
+                    color = Color.Gray,
+                    fontSize = 16.sp
+                )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Top Artist & Top Song
+        } else {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Top Artist
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
-                        .padding(16.dp)
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Top Artist",
-                            color = Color.Gray,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = statsState.monthlyCapsules[0].topArtist?.artist ?: "-",
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-                // Top Song
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
-                        .padding(16.dp)
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "Top Song",
-                            color = Color.Gray,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = statsState.monthlyCapsules[0].topSong?.title ?: "-",
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF1A1A1A), shape = RoundedCornerShape(12.dp))
-                    .padding(16.dp)
+                    .padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(
-                        text = "Day Streak",
-                        color = Color.Gray,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    val dayStreakSong = statsState.monthlyCapsules[0].dayStreakSong
-                    Text(
-                        text = "Day Streak: ${dayStreakSong?.dayStreak ?: 0} (${dayStreakSong?.title ?: "-"})",
-                        color = Color.White,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
+                Text(
+                    text = "Your Sound Capsule",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+                IconButton(onClick = {
+                    Toast.makeText(navController.context, "Generating PDF...", Toast.LENGTH_SHORT).show()
+                    PdfExporter.exportSoundCapsuleToPdf(navController.context, statsState) { uri ->
+                        if (uri != null) {
+                            PdfExporter.sharePdf(navController.context, uri)
+                        } else {
+                            (navController.context as? android.app.Activity)?.runOnUiThread {
+                                Toast.makeText(navController.context, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Download",
+                        tint = Color.White
                     )
                 }
+            }
+
+            statsState.monthlyCapsules.forEachIndexed { index, capsule ->
+                SoundCapsule(
+                    monthYear = capsule.month,
+                    minutesListened = capsule.totalTimeListened,
+                    topArtist = capsule.topArtist,
+                    topSong = capsule.topSong,
+                    dayStreakSong = capsule.dayStreakSong,
+                    onShare = { /* Implement sharing functionality */ },
+                    monthIndex = index,
+                    navController = navController
+                )
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }

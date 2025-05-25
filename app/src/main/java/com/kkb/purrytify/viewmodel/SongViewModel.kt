@@ -111,28 +111,6 @@ class SongViewModel @Inject constructor(
         }
     }
 
-    fun updateLastPlayed(songId: Int) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val userId = TokenStorage.getUserId(context)?.toIntOrNull()
-            if (userId != null) {
-                userSongDao.updateLastPlayed(
-                    userId = userId,
-                    songId = songId,
-                    lastPlayed = LocalDateTime.now()
-                )
-                // Update state in memory for instant feedback
-                _userSongs.update { list ->
-                    list.map {
-                        if (it.songId == songId) it.copy(lastPlayed = LocalDateTime.now()) else it
-                    }
-                }
-                Log.d("SongViewModel", "updateLastPlayed success")
-            } else {
-                Log.e("SongViewModel", "updateLastPlayed failed: userId is null")
-            }
-        }
-    }
-
     fun selectSong(song: Song) {
         _selectedSong.value = song
     }
