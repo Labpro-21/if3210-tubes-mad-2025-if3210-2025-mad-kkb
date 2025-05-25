@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import javax.inject.Inject
 import com.kkb.purrytify.data.remote.ApiService
+import com.kkb.purrytify.util.MediaPlayerManager
 import java.time.LocalDate
 
 @HiltViewModel
@@ -178,37 +179,7 @@ class SongViewModel @Inject constructor(
             _songs.update { it.filterNot { s -> s.id == song.songId } }
             _userSongs.update { it.filterNot { us -> us.songId == song.songId } }
         }
-    }
-
-    fun updateTimeListened(songId: Int, additionalSeconds: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val userId = TokenStorage.getUserId(context)?.toIntOrNull()
-            if (userId != null) {
-                try {
-                    val dailySongPlays = dailySongPlaysDao.getUserSongsByUserIdDate(userId,
-                        LocalDate.now())
-                    val dailySongPlay = dailySongPlays.find { it.songId == songId }
-                    
-                    if (dailySongPlay != null) {
-                        val newTimeListened = dailySongPlay.timeListened + additionalSeconds
-                        dailySongPlaysDao.updateTimeListened(userId, songId, newTimeListened)
-                    } else {
-                        val newDailySongPlay = DailySongPlays(
-                            userId = userId,
-                            songId = songId,
-                            date = LocalDate.now(),
-                            timeListened = additionalSeconds
-                        )
-                        dailySongPlaysDao.insert(newDailySongPlay)
-                    }
-
-                } catch (e: Exception) {
-                    Log.e("SongViewModel", "Error updating time listened: ${e.message}")
-                }
-            } else {
-                Log.e("SongViewModel", "updateTimeListened failed: userId is null")
-            }
-        }
+        MediaPlayerManager.stop()
     }
 
     fun getRemoteSong(id: Int?) {

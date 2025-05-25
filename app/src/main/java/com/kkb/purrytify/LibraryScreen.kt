@@ -156,6 +156,8 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
                                 FilterButton("All", selectedTab == "All") { selectedTab = "All" }
                                 Spacer(modifier = Modifier.width(10.dp))
                                 FilterButton("Liked", selectedTab == "Liked") { selectedTab = "Liked" }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                FilterButton("Downloaded", selectedTab == "Downloaded") { selectedTab = "Downloaded" }
                             }
 
                             AndroidView(
@@ -345,6 +347,8 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
                             FilterButton("All", selectedTab == "All") { selectedTab = "All" }
                             Spacer(modifier = Modifier.width(10.dp))
                             FilterButton("Liked", selectedTab == "Liked") { selectedTab = "Liked" }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            FilterButton("Downloaded", selectedTab == "Downloaded") { selectedTab = "Downloaded" }
                         }
 
                         AndroidView(
