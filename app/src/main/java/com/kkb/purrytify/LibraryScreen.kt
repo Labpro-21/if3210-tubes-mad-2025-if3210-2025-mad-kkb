@@ -1,6 +1,7 @@
 package com.kkb.purrytify
 
 import SongAdapter
+import android.content.res.Configuration
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -34,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -66,6 +68,9 @@ fun LibraryScreen(navController: NavController, currentRoute: String){
     val user_id = TokenStorage.getUserId(context)?.toIntOrNull()
     val currentSong by MediaPlayerManager.currentSong.collectAsState()
     val isPlaying by MediaPlayerManager.isPlaying.collectAsState()
+
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     val displayedSongs = if (selectedTab == "Liked") {
         songs.filter { it.isLiked }
