@@ -44,7 +44,7 @@ fun EditProfileScreen(
     // Initialize form with current profile data
     LaunchedEffect(uiState.profile) {
         uiState.profile?.let { profile ->
-            location = profile.location
+            location = profile.location ?: ""
         }
     }
 
