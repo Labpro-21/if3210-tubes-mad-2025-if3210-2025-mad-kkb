@@ -110,7 +110,8 @@ The following libraries and tools are utilized in this project:
 Screenshots of the application can be found in the `screenshot/` folder.
 
 ![](image/1.jpg)
-![](image/2.jpg)
+![](image/2.0.jpg)
+![](image/2.1.jpg)
 ![](image/3.jpg)
 ![](image/4.jpg)
 ![](image/5.jpg)
